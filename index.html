@@ -48,13 +48,17 @@ header {
 }
 .filter-bar::-webkit-scrollbar { display: none; }
 .cat-pill {
-  display: inline-block; padding: 0.32rem 0.85rem;
-  border-radius: 999px; border: 1.5px solid var(--border);
-  background: white; color: var(--muted); cursor: pointer;
-  font-size: 0.8rem; margin-right: 0.4rem; font-weight: 500;
-  transition: all 0.15s; white-space: nowrap; font-family: inherit;
+  display: inline-flex; flex-direction: column; align-items: center;
+  padding: 0.3rem 0.85rem; border-radius: 999px;
+  border: 1.5px solid var(--border); background: white; color: var(--muted);
+  cursor: pointer; font-size: 0.8rem; margin-right: 0.4rem; font-weight: 500;
+  transition: all 0.15s; white-space: nowrap; font-family: inherit; line-height: 1.25;
 }
 .cat-pill.active { color: white; border-color: transparent; }
+.cat-pill-ja {
+  font-size: 0.68em; font-family: 'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif;
+  font-weight: 400; opacity: 0.8; letter-spacing: 0.02em;
+}
 
 main { max-width: 1140px; margin: 1.2rem auto; padding: 0 1rem 5rem; }
 .results-count { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.8rem; }
@@ -69,9 +73,15 @@ main { max-width: 1140px; margin: 1.2rem auto; padding: 0 1rem 5rem; }
 }
 .term-card:hover { box-shadow: 0 5px 18px rgba(0,0,0,0.13); transform: translateY(-1px); }
 .cat-badge {
-  display: inline-block; font-size: 0.68rem; font-weight: 700;
-  letter-spacing: 0.05em; color: white; padding: 0.14rem 0.55rem;
-  border-radius: 999px; margin-bottom: 0.5rem; text-transform: uppercase;
+  display: inline-flex; flex-direction: column; align-items: flex-start;
+  font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.05em; color: white; padding: 0.18rem 0.6rem;
+  border-radius: 999px; margin-bottom: 0.5rem; text-transform: uppercase; line-height: 1.3;
+}
+.cat-badge-ja {
+  display: block; font-size: 0.78em; font-weight: 400; letter-spacing: 0.03em;
+  font-family: 'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif;
+  text-transform: none; opacity: 0.88;
 }
 .custom-tag { font-size: 0.68rem; color: #e9a000; font-weight: 700; margin-left: 0.3rem; }
 .term-en { font-size: 1.12rem; font-weight: 700; color: var(--text); margin-bottom: 0.38rem; line-height: 1.25; }
@@ -257,6 +267,30 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
 </div>
 
 <script>
+const CAT_JA = {
+  "All":               "すべて",
+  "Cardiology":        "心臓内科",
+  "Neurology":         "神経内科",
+  "Pulmonology":       "呼吸器科",
+  "Gastroenterology":  "消化器科",
+  "Orthopedics":       "整形外科",
+  "Dermatology":       "皮膚科",
+  "Oncology":          "腫瘍科",
+  "Symptoms":          "症状",
+  "General / Lab":     "一般・検査",
+  "Endocrinology":     "内分泌科",
+  "Nephrology":        "腎臓内科",
+  "Hematology":        "血液内科",
+  "Infectious Disease":"感染症科",
+  "OB / GYN":          "産婦人科",
+  "Psychiatry":        "精神科",
+  "Pharmacology":      "薬理学",
+  "Ophthalmology":     "眼科",
+  "ENT":               "耳鼻咽喉科",
+  "Urology":           "泌尿器科",
+  "Other":             "その他",
+};
+
 const CAT_COLORS = {
   "Cardiology":       "#c1121f",
   "Neurology":        "#6a0572",
@@ -1105,7 +1139,8 @@ function renderFilterBar() {
     const style    = isActive
       ? `background:${color};border-color:${color};`
       : `border-color:${color}40;color:${color};`;
-    return `<button class="cat-pill${isActive ? " active" : ""}" style="${style}" onclick="setCategory('${c}')">${c}</button>`;
+    const ja = CAT_JA[c] || "";
+    return `<button class="cat-pill${isActive ? " active" : ""}" style="${style}" onclick="setCategory('${c}')">${c}${ja ? `<span class="cat-pill-ja">${ja}</span>` : ""}</button>`;
   }).join("");
 }
 
@@ -1151,7 +1186,7 @@ function renderCard(t) {
   return `
     <div class="term-card" style="border-top-color:${color};" onclick="toggleCard(this,event)">
       ${delBtn}
-      <span class="cat-badge" style="background:${color};">${t.cat}</span>${customTag}
+      <span class="cat-badge" style="background:${color};">${t.cat}${CAT_JA[t.cat] ? `<span class="cat-badge-ja">${CAT_JA[t.cat]}</span>` : ""}</span>${customTag}
       <div class="term-en">${t.en}</div>
       ${jpHtml}
       <div class="expand-hint">▾ タップして詳細を表示</div>
