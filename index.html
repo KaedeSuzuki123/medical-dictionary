@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medical Japanese Dictionary | 医学用語辞典</title>
+<style>
+:root {
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --primary: #1a4a7c;
+  --primary-dark: #0f2f52;
+  --accent: #c1121f;
+  --text: #1a1a2e;
+  --muted: #6b7a8d;
+  --border: #e0e4ea;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+/* HEADER */
+header {
+  background: linear-gradient(135deg, #1a4a7c 0%, #0f2f52 100%);
+  color: white;
+  padding: 1.4rem 1.5rem 1.3rem;
+}
+.header-top h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; }
+.header-sub { font-size: 0.88rem; opacity: 0.75; margin-top: 0.15rem; font-family: 'Yu Gothic', 'Hiragino Kaku Gothic Pro', sans-serif; }
+.search-wrap { max-width: 600px; margin: 1rem auto 0; position: relative; }
+.search-wrap input {
+  width: 100%;
+  padding: 0.72rem 1rem 0.72rem 2.7rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.95rem;
+  outline: none;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  font-family: inherit;
+}
+.search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #aaa; pointer-events: none; }
+
+/* STAT BAR */
+.stat-bar {
+  display: flex; gap: 1.2rem; flex-wrap: wrap;
+  padding: 0.5rem 1.5rem;
+  background: var(--primary-dark);
+  color: rgba(255,255,255,0.65);
+  font-size: 0.78rem;
+}
+.stat-bar strong { color: white; }
+
+/* FILTER BAR */
+.filter-bar {
+  padding: 0.75rem 1rem;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+.cat-pill {
+  display: inline-block;
+  padding: 0.32rem 0.85rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: white;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-right: 0.4rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.cat-pill.active { color: white; border-color: transparent; }
+
+/* MAIN */
+main { max-width: 1140px; margin: 1.2rem auto; padding: 0 1rem 5rem; }
+.results-count { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.8rem; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(275px, 1fr)); gap: 1rem; }
+.no-results { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.95rem; grid-column: 1/-1; }
+
+/* TERM CARD */
+.term-card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 1rem 1.1rem 0.9rem;
+  box-shadow: var(--shadow);
+  border-top: 4px solid #ccc;
+  position: relative;
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.term-card:hover { box-shadow: 0 5px 18px rgba(0,0,0,0.13); transform: translateY(-1px); }
+.cat-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: white;
+  padding: 0.14rem 0.55rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+.custom-tag { font-size: 0.68rem; color: #e9a000; font-weight: 700; margin-left: 0.3rem; }
+.term-en { font-size: 1.12rem; font-weight: 700; color: var(--text); margin-bottom: 0.38rem; line-height: 1.25; }
+.term-jp {
+  font-family: 'Yu Gothic', 'Hiragino Kaku Gothic Pro', 'Noto Sans JP', sans-serif;
+  font-size: 1.22rem;
+  color: var(--primary);
+  line-height: 1.8;
+  margin-bottom: 0.1rem;
+}
+ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
+.term-katakana {
+  font-family: 'Yu Gothic', 'Hiragino Kaku Gothic Pro', 'Noto Sans JP', sans-serif;
+  font-size: 0.9rem;
+  color: #2a6496;
+  margin-bottom: 0.1rem;
+}
+.term-romaji { font-size: 0.8rem; color: var(--muted); font-style: italic; margin-bottom: 0.5rem; }
+.term-def { font-size: 0.81rem; color: #4a4a5a; line-height: 1.5; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+.delete-btn {
+  position: absolute; top: 0.55rem; right: 0.6rem;
+  background: none; border: none; color: #ddd;
+  cursor: pointer; font-size: 0.9rem; padding: 0.15rem 0.3rem; border-radius: 4px;
+  transition: all 0.1s;
+}
+.delete-btn:hover { color: var(--accent); background: #fef2f2; }
+
+/* ADD FAB */
+.add-fab {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--accent); color: white;
+  border: none; border-radius: 999px;
+  padding: 0.72rem 1.35rem;
+  font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; z-index: 100;
+  box-shadow: 0 4px 16px rgba(193,18,31,0.35);
+  transition: background 0.15s, transform 0.1s;
+  font-family: inherit;
+}
+.add-fab:hover { background: #a0101c; transform: translateY(-1px); }
+
+/* MODAL */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 200;
+  align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 14px;
+  padding: 1.6rem; width: 100%; max-width: 490px;
+  max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.22);
+}
+.modal h2 { font-size: 1.1rem; color: var(--primary-dark); margin-bottom: 1rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+.form-group { margin-bottom: 0.75rem; }
+.form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 0.22rem; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 0.48rem 0.65rem;
+  border: 1.5px solid var(--border); border-radius: 6px;
+  font-size: 0.88rem; font-family: inherit; outline: none;
+  transition: border-color 0.15s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+.form-group textarea { resize: vertical; min-height: 66px; }
+.form-note { font-size: 0.72rem; color: var(--muted); margin-top: 0.18rem; }
+.modal-footer { display: flex; gap: 0.6rem; margin-top: 1rem; justify-content: flex-end; }
+.btn { padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; font-size: 0.88rem; font-weight: 600; font-family: inherit; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-ghost { background: none; border: 1.5px solid var(--border); color: var(--muted); }
+.btn-ghost:hover { border-color: #aaa; color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>🏥 Medical Japanese Dictionary</h1>
+    <div class="header-sub">医学用語辞典 &nbsp;—&nbsp; 英語・日本語</div>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search English, 日本語, hiragana, or romaji…" oninput="onSearch(this.value)" autocomplete="off">
+  </div>
+</header>
+
+<div class="stat-bar" id="statBar"></div>
+<div class="filter-bar" id="filterBar"></div>
+
+<main>
+  <div class="results-count" id="resultsCount"></div>
+  <div class="cards-grid" id="cardsGrid"></div>
+</main>
+
+<button class="add-fab" onclick="openModal()">＋ Add Term</button>
+
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <h2>Add Your Own Term</h2>
+    <form id="addForm" onsubmit="submitTerm(event)">
+      <div class="form-group">
+        <label>English Term *</label>
+        <input name="en" required placeholder="e.g. Heart failure">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kanji</label>
+          <input name="kanji" placeholder="e.g. 心不全" style="font-family:'Yu Gothic',sans-serif;font-size:1rem;">
+        </div>
+        <div class="form-group">
+          <label>Hiragana (reading)</label>
+          <input name="reading" placeholder="e.g. しんふぜん" style="font-family:'Yu Gothic',sans-serif;">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Romaji</label>
+          <input name="romaji" placeholder="e.g. shinfuzen">
+        </div>
+        <div class="form-group">
+          <label>Katakana</label>
+          <input name="katakana" placeholder="e.g. アレルギー" style="font-family:'Yu Gothic',sans-serif;">
+          <div class="form-note">For loanwords only</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Category *</label>
+        <select name="cat" required>
+          <option value="">— select specialty —</option>
+          <option>Cardiology</option>
+          <option>Neurology</option>
+          <option>Pulmonology</option>
+          <option>Gastroenterology</option>
+          <option>Orthopedics</option>
+          <option>Dermatology</option>
+          <option>Oncology</option>
+          <option>Symptoms</option>
+          <option>General / Lab</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Definition / Notes</label>
+        <textarea name="def" placeholder="Short description of the term…"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Term</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+
+const CAT_COLORS = {
+  "Cardiology":       "#c1121f",
+  "Neurology":        "#6a0572",
+  "Pulmonology":      "#0077b6",
+  "Gastroenterology": "#e76f51",
+  "Orthopedics":      "#4a7c59",
+  "Dermatology":      "#9b5de5",
+  "Oncology":         "#343a40",
+  "Symptoms":         "#b5830a",
+  "General / Lab":    "#1d6fa4",
+  "Other":            "#777",
+};
+
+const BUILT_IN = [
+  // ── CARDIOLOGY ─────────────────────────────────────────────────────────────
+  { id:1,  en:"Heart",               kanji:"心臓",     reading:"しんぞう",         romaji:"shinzō",          katakana:null,         def:"The muscular organ that pumps blood through the circulatory system.",                           cat:"Cardiology" },
+  { id:2,  en:"Cardiac arrest",      kanji:"心停止",   reading:"しんていし",       romaji:"shinteishi",      katakana:null,         def:"Sudden cessation of heart function.",                                                          cat:"Cardiology" },
+  { id:3,  en:"Myocardial infarction",kanji:"心筋梗塞",reading:"しんきんこうそく", romaji:"shinkin kōsoku",  katakana:null,         def:"Heart attack; death of heart muscle due to a blocked coronary artery.",                        cat:"Cardiology" },
+  { id:4,  en:"Hypertension",        kanji:"高血圧",   reading:"こうけつあつ",     romaji:"kōketsu-atsu",    katakana:null,         def:"Persistently elevated blood pressure.",                                                        cat:"Cardiology" },
+  { id:5,  en:"Arrhythmia",          kanji:"不整脈",   reading:"ふせいみゃく",     romaji:"fuseimyaku",      katakana:null,         def:"Irregular heart rhythm.",                                                                      cat:"Cardiology" },
+  { id:6,  en:"Heart failure",       kanji:"心不全",   reading:"しんふぜん",       romaji:"shinfuzen",       katakana:null,         def:"Inability of the heart to pump sufficient blood to meet the body's needs.",                    cat:"Cardiology" },
+  { id:7,  en:"Coronary artery",     kanji:"冠動脈",   reading:"かんどうみゃく",   romaji:"kandōmyaku",      katakana:null,         def:"Blood vessels that supply oxygenated blood to the heart muscle.",                             cat:"Cardiology" },
+  { id:8,  en:"Angina",              kanji:"狭心症",   reading:"きょうしんしょう", romaji:"kyōshinshō",      katakana:null,         def:"Chest pain caused by reduced blood flow to the heart muscle.",                                cat:"Cardiology" },
+  { id:9,  en:"Aorta",               kanji:"大動脈",   reading:"だいどうみゃく",   romaji:"daidōmyaku",      katakana:null,         def:"The largest artery, carrying oxygenated blood from the left ventricle.",                      cat:"Cardiology" },
+  { id:10, en:"Pericardium",         kanji:"心膜",     reading:"しんまく",         romaji:"shinmaku",        katakana:null,         def:"The double-walled protective sac surrounding the heart.",                                     cat:"Cardiology" },
+  { id:11, en:"Atrial fibrillation", kanji:"心房細動", reading:"しんぼうさいどう", romaji:"shinbō saidō",    katakana:null,         def:"Irregular, rapid heart rhythm originating in the atria.",                                     cat:"Cardiology" },
+  { id:12, en:"Electrocardiogram",   kanji:"心電図",   reading:"しんでんず",       romaji:"shindenzu",       katakana:"ECG / EKG",  def:"A recording of the heart's electrical activity.",                                             cat:"Cardiology" },
+
+  // ── NEUROLOGY ──────────────────────────────────────────────────────────────
+  { id:13, en:"Brain",               kanji:"脳",       reading:"のう",             romaji:"nō",              katakana:null,         def:"The central organ of the nervous system, enclosed within the skull.",                         cat:"Neurology" },
+  { id:14, en:"Stroke",              kanji:"脳卒中",   reading:"のうそっちゅう",   romaji:"nōsocchū",        katakana:null,         def:"Sudden disruption of blood supply to the brain, causing tissue death.",                       cat:"Neurology" },
+  { id:15, en:"Epilepsy",            kanji:"てんかん", reading:"てんかん",         romaji:"tenkan",          katakana:null,         def:"Neurological disorder characterized by recurrent seizures.",                                  cat:"Neurology" },
+  { id:16, en:"Migraine",            kanji:"片頭痛",   reading:"へんずつう",       romaji:"henzutsū",        katakana:"ミグレーン", def:"Severe, often one-sided headache with nausea and sensitivity to light.",                      cat:"Neurology" },
+  { id:17, en:"Parkinson's disease", kanji:"パーキンソン病",reading:"パーキンソンびょう",romaji:"Pākinson-byō",katakana:"パーキンソン病",def:"Neurodegenerative disorder affecting movement, causing tremor and rigidity.",             cat:"Neurology" },
+  { id:18, en:"Alzheimer's disease", kanji:"アルツハイマー病",reading:"アルツハイマーびょう",romaji:"Arutsuhaimā-byō",katakana:"アルツハイマー病",def:"Progressive neurodegenerative disease causing memory loss and dementia.",        cat:"Neurology" },
+  { id:19, en:"Nerve",               kanji:"神経",     reading:"しんけい",         romaji:"shinkei",         katakana:null,         def:"A bundle of fibers that transmits electrical signals throughout the body.",                   cat:"Neurology" },
+  { id:20, en:"Spinal cord",         kanji:"脊髄",     reading:"せきずい",         romaji:"sekizui",         katakana:null,         def:"The main nerve trunk running through the vertebral column.",                                  cat:"Neurology" },
+  { id:21, en:"Multiple sclerosis",  kanji:"多発性硬化症",reading:"たはつせいこうかしょう",romaji:"tahatsusei kōkashō",katakana:null,def:"Autoimmune disease in which the immune system attacks the myelin sheath.",                cat:"Neurology" },
+  { id:22, en:"Meningitis",          kanji:"髄膜炎",   reading:"ずいまくえん",     romaji:"zuimakuen",       katakana:null,         def:"Inflammation of the meninges surrounding the brain and spinal cord.",                         cat:"Neurology" },
+  { id:23, en:"Dementia",            kanji:"認知症",   reading:"にんちしょう",     romaji:"ninchishō",       katakana:null,         def:"Decline in cognitive function severe enough to interfere with daily life.",                   cat:"Neurology" },
+  { id:24, en:"Neuron",              kanji:"神経細胞", reading:"しんけいさいぼう", romaji:"shinkei saibō",   katakana:"ニューロン", def:"A nerve cell; the fundamental signaling unit of the nervous system.",                         cat:"Neurology" },
+
+  // ── PULMONOLOGY ────────────────────────────────────────────────────────────
+  { id:25, en:"Lung",                kanji:"肺",       reading:"はい",             romaji:"hai",             katakana:null,         def:"The paired respiratory organs that exchange oxygen and carbon dioxide.",                       cat:"Pulmonology" },
+  { id:26, en:"Asthma",              kanji:"喘息",     reading:"ぜんそく",         romaji:"zensoku",         katakana:null,         def:"Chronic inflammatory airway disease causing wheezing and breathlessness.",                    cat:"Pulmonology" },
+  { id:27, en:"Pneumonia",           kanji:"肺炎",     reading:"はいえん",         romaji:"haien",           katakana:null,         def:"Infection causing inflammation and fluid accumulation in lung tissue.",                       cat:"Pulmonology" },
+  { id:28, en:"Bronchitis",          kanji:"気管支炎", reading:"きかんしえん",     romaji:"kikanshien",      katakana:null,         def:"Inflammation of the bronchial tubes.",                                                        cat:"Pulmonology" },
+  { id:29, en:"COPD",                kanji:"慢性閉塞性肺疾患",reading:"まんせいへいそくせいはいしっかん",romaji:"mansei heisokusei haishikkan",katakana:"COPD",def:"Chronic obstructive pulmonary disease; progressive, irreversible airflow limitation.",cat:"Pulmonology" },
+  { id:30, en:"Trachea",             kanji:"気管",     reading:"きかん",           romaji:"kikan",           katakana:null,         def:"The windpipe; the main airway connecting the larynx to the bronchi.",                         cat:"Pulmonology" },
+  { id:31, en:"Diaphragm",           kanji:"横隔膜",   reading:"おうかくまく",     romaji:"ōkakumaku",       katakana:null,         def:"The dome-shaped muscle separating the chest from the abdomen; the primary breathing muscle.", cat:"Pulmonology" },
+  { id:32, en:"Pulmonary embolism",  kanji:"肺塞栓症", reading:"はいそくせんしょう",romaji:"haisokusen-shō", katakana:null,         def:"Blockage of a pulmonary artery, usually by a blood clot from a deep vein.",                  cat:"Pulmonology" },
+  { id:33, en:"Tuberculosis",        kanji:"結核",     reading:"けっかく",         romaji:"kekkaku",         katakana:null,         def:"Bacterial infection by Mycobacterium tuberculosis, mainly affecting the lungs.",              cat:"Pulmonology" },
+  { id:34, en:"Pleura",              kanji:"胸膜",     reading:"きょうまく",       romaji:"kyōmaku",         katakana:null,         def:"The thin membrane lining the lungs and inner chest wall.",                                   cat:"Pulmonology" },
+
+  // ── GASTROENTEROLOGY ───────────────────────────────────────────────────────
+  { id:35, en:"Stomach",             kanji:"胃",       reading:"い",               romaji:"i",               katakana:null,         def:"Muscular digestive organ that churns and partly digests food.",                               cat:"Gastroenterology" },
+  { id:36, en:"Liver",               kanji:"肝臓",     reading:"かんぞう",         romaji:"kanzō",           katakana:null,         def:"Largest internal organ; processes nutrients, detoxifies blood, and produces bile.",           cat:"Gastroenterology" },
+  { id:37, en:"Small intestine",     kanji:"小腸",     reading:"しょうちょう",     romaji:"shōchō",          katakana:null,         def:"The primary site of nutrient digestion and absorption.",                                      cat:"Gastroenterology" },
+  { id:38, en:"Large intestine",     kanji:"大腸",     reading:"だいちょう",       romaji:"daichō",          katakana:null,         def:"Reabsorbs water and electrolytes; forms and stores feces.",                                   cat:"Gastroenterology" },
+  { id:39, en:"Pancreas",            kanji:"膵臓",     reading:"すいぞう",         romaji:"suizō",           katakana:null,         def:"Produces digestive enzymes and hormones including insulin and glucagon.",                     cat:"Gastroenterology" },
+  { id:40, en:"Gallbladder",         kanji:"胆嚢",     reading:"たんのう",         romaji:"tannō",           katakana:null,         def:"Small organ that stores and concentrates bile produced by the liver.",                        cat:"Gastroenterology" },
+  { id:41, en:"Hepatitis",           kanji:"肝炎",     reading:"かんえん",         romaji:"kan-en",          katakana:null,         def:"Inflammation of the liver, often caused by viral infection.",                                 cat:"Gastroenterology" },
+  { id:42, en:"Cirrhosis",           kanji:"肝硬変",   reading:"かんこうへん",     romaji:"kankōhen",        katakana:null,         def:"Scarring and hardening of the liver due to long-term damage.",                                cat:"Gastroenterology" },
+  { id:43, en:"Gastritis",           kanji:"胃炎",     reading:"いえん",           romaji:"ien",             katakana:null,         def:"Inflammation of the stomach lining.",                                                         cat:"Gastroenterology" },
+  { id:44, en:"Appendix",            kanji:"虫垂",     reading:"ちゅうすい",       romaji:"chūsui",          katakana:null,         def:"A small pouch attached to the junction of the small and large intestines.",                   cat:"Gastroenterology" },
+  { id:45, en:"Esophagus",           kanji:"食道",     reading:"しょくどう",       romaji:"shokudō",         katakana:null,         def:"Muscular tube connecting the pharynx to the stomach.",                                        cat:"Gastroenterology" },
+
+  // ── ORTHOPEDICS ────────────────────────────────────────────────────────────
+  { id:46, en:"Bone",                kanji:"骨",       reading:"ほね",             romaji:"hone",            katakana:null,         def:"Hard dense connective tissue that forms the skeleton.",                                        cat:"Orthopedics" },
+  { id:47, en:"Fracture",            kanji:"骨折",     reading:"こっせつ",         romaji:"kossetsu",        katakana:null,         def:"A break in the continuity of a bone.",                                                        cat:"Orthopedics" },
+  { id:48, en:"Joint",               kanji:"関節",     reading:"かんせつ",         romaji:"kansetsu",        katakana:null,         def:"The point where two or more bones meet and articulate.",                                      cat:"Orthopedics" },
+  { id:49, en:"Tendon",              kanji:"腱",       reading:"けん",             romaji:"ken",             katakana:null,         def:"Fibrous connective tissue that attaches muscle to bone.",                                     cat:"Orthopedics" },
+  { id:50, en:"Ligament",            kanji:"靱帯",     reading:"じんたい",         romaji:"jintai",          katakana:null,         def:"Fibrous connective tissue connecting bone to bone at a joint.",                               cat:"Orthopedics" },
+  { id:51, en:"Arthritis",           kanji:"関節炎",   reading:"かんせつえん",     romaji:"kansetsuen",      katakana:null,         def:"Inflammation of one or more joints, causing pain and stiffness.",                             cat:"Orthopedics" },
+  { id:52, en:"Osteoporosis",        kanji:"骨粗鬆症", reading:"こつそしょうしょう",romaji:"kotsusoshōshō",  katakana:null,         def:"Loss of bone density and strength, increasing fracture risk.",                                cat:"Orthopedics" },
+  { id:53, en:"Cartilage",           kanji:"軟骨",     reading:"なんこつ",         romaji:"nankotsu",        katakana:null,         def:"Smooth connective tissue covering the ends of bones in joints.",                              cat:"Orthopedics" },
+  { id:54, en:"Muscle",              kanji:"筋肉",     reading:"きんにく",         romaji:"kinniku",         katakana:null,         def:"Contractile tissue that produces movement.",                                                   cat:"Orthopedics" },
+  { id:55, en:"Spine",               kanji:"脊柱",     reading:"せきちゅう",       romaji:"sekichū",         katakana:null,         def:"The vertebral column, providing structural support and protecting the spinal cord.",           cat:"Orthopedics" },
+
+  // ── DERMATOLOGY ────────────────────────────────────────────────────────────
+  { id:56, en:"Skin",                kanji:"皮膚",     reading:"ひふ",             romaji:"hifu",            katakana:null,         def:"The body's largest organ; forms a protective outer barrier.",                                cat:"Dermatology" },
+  { id:57, en:"Eczema",              kanji:"湿疹",     reading:"しっしん",         romaji:"shisshin",        katakana:null,         def:"Inflammatory skin condition causing itchy, red, cracked or weeping skin.",                    cat:"Dermatology" },
+  { id:58, en:"Psoriasis",           kanji:"乾癬",     reading:"かんせん",         romaji:"kansen",          katakana:null,         def:"Autoimmune disease producing red, scaly patches on the skin.",                                cat:"Dermatology" },
+  { id:59, en:"Dermatitis",          kanji:"皮膚炎",   reading:"ひふえん",         romaji:"hifuen",          katakana:null,         def:"Inflammation of the skin, often presenting as a rash.",                                       cat:"Dermatology" },
+  { id:60, en:"Urticaria",           kanji:"蕁麻疹",   reading:"じんましん",       romaji:"jinmashin",       katakana:null,         def:"Hives; raised, itchy welts on the skin, often due to an allergic reaction.",                 cat:"Dermatology" },
+  { id:61, en:"Melanoma",            kanji:"悪性黒色腫",reading:"あくせいこくしょくしゅ",romaji:"akusei kokushokushu",katakana:"メラノーマ",def:"Malignant tumor of melanocytes; the most dangerous form of skin cancer.",          cat:"Dermatology" },
+  { id:62, en:"Acne",                kanji:"痤瘡",     reading:"ざそう",           romaji:"zasō",            katakana:"ニキビ",     def:"Common skin condition caused by blocked hair follicles and sebaceous glands.",                cat:"Dermatology" },
+  { id:63, en:"Cellulitis",          kanji:"蜂窩織炎", reading:"ほうかしきえん",   romaji:"hōkashikien",     katakana:null,         def:"Bacterial infection of the skin and underlying soft tissue.",                                 cat:"Dermatology" },
+
+  // ── ONCOLOGY ───────────────────────────────────────────────────────────────
+  { id:64, en:"Cancer",              kanji:"癌",       reading:"がん",             romaji:"gan",             katakana:null,         def:"Malignant disease characterized by uncontrolled cell division and spread.",                    cat:"Oncology" },
+  { id:65, en:"Tumor",               kanji:"腫瘍",     reading:"しゅよう",         romaji:"shuyō",           katakana:null,         def:"An abnormal mass of tissue that may be benign or malignant.",                                 cat:"Oncology" },
+  { id:66, en:"Chemotherapy",        kanji:"化学療法", reading:"かがくりょうほう", romaji:"kagaku ryōhō",    katakana:"ケモセラピー",def:"Drug treatment designed to kill or slow the growth of cancer cells.",                        cat:"Oncology" },
+  { id:67, en:"Radiation therapy",   kanji:"放射線療法",reading:"ほうしゃせんりょうほう",romaji:"hōshasen ryōhō",katakana:null,    def:"Treatment using ionizing radiation to destroy cancer cells.",                                 cat:"Oncology" },
+  { id:68, en:"Metastasis",          kanji:"転移",     reading:"てんい",           romaji:"ten-i",           katakana:null,         def:"The spread of cancer cells from the primary site to distant organs.",                          cat:"Oncology" },
+  { id:69, en:"Biopsy",              kanji:"生検",     reading:"せいけん",         romaji:"seiken",          katakana:null,         def:"Removal of tissue for microscopic examination to diagnose disease.",                          cat:"Oncology" },
+  { id:70, en:"Remission",           kanji:"寛解",     reading:"かんかい",         romaji:"kankai",          katakana:null,         def:"Decrease or disappearance of cancer signs and symptoms.",                                     cat:"Oncology" },
+  { id:71, en:"Lymphoma",            kanji:"リンパ腫", reading:"リンパしゅ",       romaji:"rinpa-shu",       katakana:"リンパ腫",   def:"Cancer originating in the cells of the lymphatic system.",                                   cat:"Oncology" },
+  { id:72, en:"Leukemia",            kanji:"白血病",   reading:"はっけつびょう",   romaji:"hakketsubyō",     katakana:null,         def:"Cancer of blood-forming tissues affecting white blood cell production.",                       cat:"Oncology" },
+
+  // ── SYMPTOMS ───────────────────────────────────────────────────────────────
+  { id:73, en:"Pain",                kanji:"痛み",     reading:"いたみ",           romaji:"itami",           katakana:null,         def:"An unpleasant sensory and emotional experience associated with tissue damage.",               cat:"Symptoms" },
+  { id:74, en:"Fever",               kanji:"発熱",     reading:"はつねつ",         romaji:"hatsunetsu",      katakana:null,         def:"Elevated body temperature, typically above 38 °C (100.4 °F).",                              cat:"Symptoms" },
+  { id:75, en:"Cough",               kanji:"咳",       reading:"せき",             romaji:"seki",            katakana:null,         def:"Rapid expulsion of air from the lungs to clear the airway.",                                  cat:"Symptoms" },
+  { id:76, en:"Nausea",              kanji:"吐き気",   reading:"はきけ",           romaji:"hakike",          katakana:null,         def:"An unpleasant sensation in the stomach with an urge to vomit.",                              cat:"Symptoms" },
+  { id:77, en:"Fatigue",             kanji:"疲労",     reading:"ひろう",           romaji:"hirō",            katakana:null,         def:"Extreme tiredness resulting from physical or mental exertion or illness.",                    cat:"Symptoms" },
+  { id:78, en:"Headache",            kanji:"頭痛",     reading:"ずつう",           romaji:"zutsū",           katakana:null,         def:"Pain in the head, scalp, or neck.",                                                           cat:"Symptoms" },
+  { id:79, en:"Dizziness",           kanji:"めまい",   reading:"めまい",           romaji:"memai",           katakana:null,         def:"A sensation of spinning, unsteadiness, or lightheadedness.",                                 cat:"Symptoms" },
+  { id:80, en:"Shortness of breath", kanji:"息切れ",   reading:"いきぎれ",         romaji:"ikigire",         katakana:null,         def:"Difficulty breathing; a sensation of not getting enough air.",                               cat:"Symptoms" },
+  { id:81, en:"Swelling",            kanji:"腫れ",     reading:"はれ",             romaji:"hare",            katakana:null,         def:"Abnormal enlargement of a body part, usually due to fluid accumulation.",                    cat:"Symptoms" },
+  { id:82, en:"Rash",                kanji:"発疹",     reading:"ほっしん",         romaji:"hosshin",         katakana:null,         def:"A temporary skin eruption characterized by redness, spots, or blisters.",                    cat:"Symptoms" },
+  { id:83, en:"Vomiting",            kanji:"嘔吐",     reading:"おうと",           romaji:"ōto",             katakana:null,         def:"Forceful expulsion of stomach contents through the mouth.",                                   cat:"Symptoms" },
+
+  // ── GENERAL / LAB ──────────────────────────────────────────────────────────
+  { id:84, en:"Diagnosis",           kanji:"診断",     reading:"しんだん",         romaji:"shindan",         katakana:null,         def:"Identification of a disease or condition based on symptoms and tests.",                       cat:"General / Lab" },
+  { id:85, en:"Blood test",          kanji:"血液検査", reading:"けつえきけんさ",   romaji:"ketsueki kensa",  katakana:null,         def:"Laboratory analysis of a blood sample to detect disease or assess health.",                  cat:"General / Lab" },
+  { id:86, en:"X-ray",               kanji:"X線",      reading:"エックスせん",     romaji:"ekkusu-sen",      katakana:"レントゲン", def:"Medical imaging using ionizing radiation; called Röntgen (レントゲン) in Japanese.",           cat:"General / Lab" },
+  { id:87, en:"MRI",                 kanji:"磁気共鳴画像",reading:"じききょうめいがぞう",romaji:"jiki kyōmei gazō",katakana:"エムアールアイ",def:"Magnetic resonance imaging; produces detailed cross-sectional images.",           cat:"General / Lab" },
+  { id:88, en:"Allergy",             kanji:"アレルギー",reading:"アレルギー",      romaji:"arerugī",         katakana:"アレルギー", def:"Immune hypersensitivity reaction to a normally harmless substance.",                          cat:"General / Lab" },
+  { id:89, en:"Prescription",        kanji:"処方箋",   reading:"しょほうせん",     romaji:"shohōsen",        katakana:null,         def:"A written order from a physician authorizing medication for a patient.",                      cat:"General / Lab" },
+  { id:90, en:"Injection",           kanji:"注射",     reading:"ちゅうしゃ",       romaji:"chūsha",          katakana:null,         def:"Introduction of a fluid into the body using a needle and syringe.",                          cat:"General / Lab" },
+  { id:91, en:"Antibiotic",          kanji:"抗生物質", reading:"こうせいぶっしつ", romaji:"kōsei busshitsu", katakana:null,         def:"A drug that kills or inhibits the growth of bacteria.",                                       cat:"General / Lab" },
+  { id:92, en:"Vaccine",             kanji:"ワクチン", reading:"ワクチン",         romaji:"wakuchin",        katakana:"ワクチン",   def:"A biological preparation that induces immunity against a specific disease.",                   cat:"General / Lab" },
+  { id:93, en:"Surgery",             kanji:"手術",     reading:"しゅじゅつ",       romaji:"shujutsu",        katakana:null,         def:"Manual or instrumental treatment of disease or injury.",                                      cat:"General / Lab" },
+  { id:94, en:"Emergency",           kanji:"緊急",     reading:"きんきゅう",       romaji:"kinkyū",          katakana:null,         def:"A serious situation requiring immediate medical attention.",                                   cat:"General / Lab" },
+  { id:95, en:"Ultrasound",          kanji:"超音波",   reading:"ちょうおんぱ",     romaji:"chōonpa",         katakana:"エコー",     def:"Imaging technique using high-frequency sound waves; called エコー in clinical use.",          cat:"General / Lab" },
+  { id:96, en:"CT scan",             kanji:"コンピュータ断層撮影",reading:"コンピュータだんそうさつえい",romaji:"konpyūta dansō satsuei",katakana:"CTスキャン",def:"Computed tomography; X-ray based cross-sectional imaging.", cat:"General / Lab" },
+];
+
+/* ── STATE ─────────────────────────────────────────────────────────────────── */
+let searchQuery = "";
+let activeCategory = "All";
+let customTerms = loadCustomTerms();
+let nextId = 2000;
+
+/* ── PERSISTENCE ───────────────────────────────────────────────────────────── */
+function loadCustomTerms() {
+  try { return JSON.parse(localStorage.getItem("medDictCustom")) || []; }
+  catch { return []; }
+}
+function saveCustomTerms() {
+  localStorage.setItem("medDictCustom", JSON.stringify(customTerms));
+}
+
+/* ── DATA HELPERS ──────────────────────────────────────────────────────────── */
+function getAllTerms() { return [...BUILT_IN, ...customTerms]; }
+
+function getCategories() {
+  const order = ["All", ...Object.keys(CAT_COLORS)];
+  const used = new Set(getAllTerms().map(t => t.cat));
+  return order.filter(c => c === "All" || used.has(c));
+}
+
+function getFilteredTerms() {
+  const q = searchQuery.toLowerCase().trim();
+  return getAllTerms().filter(t => {
+    if (activeCategory !== "All" && t.cat !== activeCategory) return false;
+    if (!q) return true;
+    return (
+      t.en.toLowerCase().includes(q) ||
+      (t.kanji   && t.kanji.includes(q)) ||
+      (t.reading && t.reading.includes(q)) ||
+      (t.romaji  && t.romaji.toLowerCase().includes(q)) ||
+      (t.katakana && t.katakana.includes(q)) ||
+      (t.def     && t.def.toLowerCase().includes(q))
+    );
+  });
+}
+
+/* ── RENDER ────────────────────────────────────────────────────────────────── */
+function renderStatBar() {
+  const total = BUILT_IN.length + customTerms.length;
+  const cats  = getCategories().length - 1;
+  document.getElementById("statBar").innerHTML =
+    `<strong>${total}</strong> terms &nbsp;·&nbsp; <strong>${cats}</strong> specialties &nbsp;·&nbsp; <strong>${customTerms.length}</strong> added by you`;
+}
+
+function renderFilterBar() {
+  const cats = getCategories();
+  document.getElementById("filterBar").innerHTML = cats.map(c => {
+    const color   = c === "All" ? "#555" : (CAT_COLORS[c] || "#888");
+    const isActive = c === activeCategory;
+    const style    = isActive
+      ? `background:${color};border-color:${color};`
+      : `border-color:${color}40;color:${color};`;
+    return `<button class="cat-pill${isActive ? " active" : ""}" style="${style}" onclick="setCategory('${c}')">${c}</button>`;
+  }).join("");
+}
+
+function rubyHtml(kanji, reading) {
+  if (!kanji) return "";
+  if (!reading || kanji === reading) return kanji;
+  return `<ruby>${kanji}<rt>${reading}</rt></ruby>`;
+}
+
+function renderCard(t) {
+  const color     = CAT_COLORS[t.cat] || "#888";
+  const delBtn    = t.custom ? `<button class="delete-btn" title="Delete" onclick="deleteTerm(${t.id})">✕</button>` : "";
+  const customTag = t.custom ? `<span class="custom-tag">★ custom</span>` : "";
+  const jpHtml    = (t.kanji || t.reading) ? `<div class="term-jp">${rubyHtml(t.kanji, t.reading)}</div>` : "";
+  const kataHtml  = (t.katakana && t.katakana !== t.kanji)
+    ? `<div class="term-katakana">${t.katakana}</div>` : "";
+  const romaHtml  = t.romaji ? `<div class="term-romaji">${t.romaji}</div>` : "";
+  const defHtml   = t.def ? `<p class="term-def">${t.def}</p>` : "";
+  return `
+    <div class="term-card" style="border-top-color:${color};">
+      ${delBtn}
+      <span class="cat-badge" style="background:${color};">${t.cat}</span>${customTag}
+      <div class="term-en">${t.en}</div>
+      ${jpHtml}${kataHtml}${romaHtml}${defHtml}
+    </div>`;
+}
+
+function renderCards() {
+  const filtered = getFilteredTerms();
+  const total    = getAllTerms().length;
+  document.getElementById("resultsCount").textContent =
+    `Showing ${filtered.length} of ${total} terms`;
+  document.getElementById("cardsGrid").innerHTML = filtered.length
+    ? filtered.map(renderCard).join("")
+    : `<div class="no-results">No terms found for "<strong>${searchQuery}</strong>".<br>Try a different spelling or <button onclick="openModal()" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:inherit;text-decoration:underline;">add it yourself</button>.</div>`;
+}
+
+function render() {
+  renderStatBar();
+  renderFilterBar();
+  renderCards();
+}
+
+/* ── INTERACTIONS ──────────────────────────────────────────────────────────── */
+function onSearch(val)      { searchQuery = val; renderCards(); }
+function setCategory(cat)   { activeCategory = cat; render(); }
+function deleteTerm(id) {
+  if (!confirm("Delete this custom term?")) return;
+  customTerms = customTerms.filter(t => t.id !== id);
+  saveCustomTerms();
+  render();
+}
+
+/* ── MODAL ─────────────────────────────────────────────────────────────────── */
+function openModal()  { document.getElementById("modalOverlay").classList.add("open"); }
+function closeModal() {
+  document.getElementById("modalOverlay").classList.remove("open");
+  document.getElementById("addForm").reset();
+}
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById("modalOverlay")) closeModal();
+}
+function submitTerm(e) {
+  e.preventDefault();
+  const d = new FormData(e.target);
+  const term = {
+    id:       nextId++,
+    en:       d.get("en").trim(),
+    kanji:    d.get("kanji").trim()    || null,
+    reading:  d.get("reading").trim()  || null,
+    romaji:   d.get("romaji").trim()   || null,
+    katakana: d.get("katakana").trim() || null,
+    def:      d.get("def").trim()      || null,
+    cat:      d.get("cat"),
+    custom:   true,
+  };
+  customTerms.push(term);
+  saveCustomTerms();
+  closeModal();
+  render();
+}
+
+/* ── INIT ───────────────────────────────────────────────────────────────────── */
+render();
+</script>
+</body>
+</html>
