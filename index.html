@@ -86,6 +86,9 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
 }
 .term-romaji { font-size: 0.8rem; color: var(--muted); font-style: italic; margin-bottom: 0.5rem; }
 .term-defs { border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.3rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.term-symptoms { margin-top: 0.45rem; padding-top: 0.45rem; border-top: 1px dashed #e8eaf0; }
+.symptoms-label { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; background: #f0f4ff; color: #3a5cb8; border-radius: 3px; padding: 0.1rem 0.4rem; margin-right: 0.4rem; vertical-align: middle; }
+.symptoms-text { font-size: 0.79rem; color: #4a5060; line-height: 1.5; font-family: 'Segoe UI', sans-serif; }
 .term-def-row { display: flex; gap: 0.45rem; align-items: flex-start; }
 .def-lang {
   flex-shrink: 0; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
@@ -219,6 +222,11 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
       <div class="form-group">
         <label>Japanese Description &nbsp;<span style="font-family:'Yu Gothic',sans-serif;font-size:0.85rem;">（日本語の説明）</span></label>
         <textarea name="defJa" placeholder="日本語の説明…" style="font-family:'Yu Gothic','Hiragino Kaku Gothic Pro',sans-serif;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Signs &amp; Symptoms / Clinical Notes</label>
+        <textarea name="symptoms" placeholder="e.g. Fever · Chest pain · Dyspnea · Tachycardia"></textarea>
+        <div class="form-note">Separate items with · (middle dot) or commas</div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -526,6 +534,253 @@ const BUILT_IN = [
   { id:224, en:"Erectile dysfunction",       kanji:"勃起不全",             reading:"ぼっきふぜん",                  romaji:"bokki fuzen",              katakana:"ED",                def:"Inability to achieve or maintain an erection sufficient for sexual activity.",                                       defJa:"性行為に十分な勃起を達成または維持できない状態。",                                 cat:"Urology" },
 ];
 
+/* ── SYMPTOMS MAP ───────────────────────────────────────────────────────────── */
+const SYMPTOMS_MAP = {
+  // CARDIOLOGY
+  1:   "Chest pain · Palpitations · Dyspnea · Edema (when diseased)",
+  2:   "Sudden collapse · No pulse · No breathing · Loss of consciousness",
+  3:   "Severe chest pain radiating to arm/jaw · Sweating · Nausea · Dyspnea",
+  4:   "Often asymptomatic · Headache · Visual disturbances · Epistaxis (severe cases)",
+  5:   "Palpitations · Dizziness · Syncope · Dyspnea · Chest discomfort",
+  6:   "Dyspnea on exertion · Orthopnea · Leg edema · Fatigue · Cough",
+  7:   "Occlusion → chest pain on exertion · ST elevation in MI",
+  8:   "Chest tightness/pressure · Triggered by exertion · Relieved by rest or nitrates",
+  9:   "Dissection: sudden tearing chest/back pain · Hypotension · Unequal pulses",
+  10:  "Pericarditis: sharp chest pain worse when lying flat · Fever · Friction rub",
+  11:  "Palpitations · Irregularly irregular pulse · Dyspnea · Fatigue · Stroke risk",
+  12:  "Diagnostic tool — no direct symptoms · Detects arrhythmias, MI, conduction defects",
+  97:  "No pulse · No breathing · Loss of consciousness · Requires immediate defibrillation",
+  98:  "Chest pain · Dyspnea · Palpitations · Fever · Fatigue",
+  99:  "Fever · New/changing heart murmur · Fatigue · Embolic events · Splinter hemorrhages",
+  100: "Beck's triad: hypotension · Muffled heart sounds · Jugular venous distension · Dyspnea",
+  101: "Leg swelling · Pain · Warmth · Redness · Risk of pulmonary embolism",
+  102: "Hypertension · Pale/cold extremities · Reduced peripheral blood flow",
+  103: "Flushing · Hypotension · Warmth of skin · Headache",
+  104: "Decreased CO: fatigue · Hypotension · Oliguria · Poor peripheral perfusion",
+  // NEUROLOGY
+  13:  "Brain damage: weakness · Aphasia · Cognitive impairment · Personality change",
+  14:  "Sudden facial droop · Arm weakness · Speech difficulty (FAST) · Severe headache",
+  15:  "Seizures · Loss of consciousness · Convulsions · Aura · Post-ictal confusion",
+  16:  "Severe throbbing headache (unilateral) · Nausea · Vomiting · Photophobia · Phonophobia",
+  17:  "Resting tremor · Bradykinesia · Rigidity · Postural instability · Shuffling gait",
+  18:  "Memory loss (recent events first) · Confusion · Personality change · Disorientation",
+  19:  "Nerve damage: numbness · Tingling · Weakness · Pain along nerve distribution",
+  20:  "Injury: paralysis · Loss of sensation · Bladder/bowel dysfunction below level",
+  21:  "Fatigue · Visual disturbances (optic neuritis) · Weakness · Numbness · Ataxia",
+  22:  "Severe headache · Neck stiffness · Fever · Photophobia · Kernig's sign · Brudzinski's sign",
+  23:  "Memory loss · Confusion · Behavioral changes · Difficulty with daily activities",
+  24:  "Damage: loss of sensation or motor function depending on neuron type",
+  105: "Sudden weakness/numbness · Speech difficulty · Visual loss · Resolves within 24 hours",
+  106: "Fever · Headache · Altered consciousness · Seizures · Focal neurological deficits",
+  107: "Numbness · Tingling · Burning pain · Weakness (distal extremities, glove-and-stocking)",
+  108: "Progressive muscle weakness · Fasciculations · Atrophy · Dysarthria · Dysphagia",
+  109: "Dysregulation: syncope · Orthostatic hypotension · Sweating abnormalities · Bladder dysfunction",
+  110: "Headache · Nausea · Vision problems · Gait disturbance · Cognitive decline",
+  111: "Dysfunction: weakness · Tremor · Cognitive disorders (e.g., myasthenia gravis, Parkinson's)",
+  112: "Spasticity · Movement disorders · Poor coordination · Speech difficulties",
+  // PULMONOLOGY
+  25:  "Disease signs: dyspnea · Cough · Cyanosis · Decreased breath sounds · Crackles",
+  26:  "Wheezing · Dyspnea · Chest tightness · Cough (especially nocturnal) · Triggered by allergens/exercise",
+  27:  "Fever · Productive cough · Pleuritic chest pain · Dyspnea · Crackles on auscultation",
+  28:  "Persistent cough · Mucus production · Mild fever · Chest discomfort",
+  29:  "Chronic cough · Dyspnea on exertion · Sputum · Barrel chest (late) · Wheeze",
+  30:  "Obstruction: stridor · Dyspnea · Cyanosis · Choking sensation",
+  31:  "Paralysis: dyspnea · Orthopnea · Paradoxical breathing",
+  32:  "Sudden dyspnea · Pleuritic chest pain · Tachycardia · Hemoptysis · Hypoxia",
+  33:  "Chronic cough · Hemoptysis · Night sweats · Weight loss · Fever · Fatigue",
+  34:  "Pleuritis: sharp chest pain worse with breathing · Effusion: dullness on percussion",
+  113: "Sudden chest pain · Dyspnea · Decreased breath sounds (ipsilateral) · Tracheal deviation (tension)",
+  114: "Dyspnea · Dullness on percussion · Decreased breath sounds · Pleuritic pain",
+  115: "Severe dyspnea · Cyanosis · Altered consciousness · Hypoxia · Hypercapnia",
+  116: "Loud snoring · Gasping during sleep · Excessive daytime sleepiness · Morning headache",
+  117: "Relieves: wheeze · Dyspnea · Chest tightness · Side effects: tremor · Tachycardia",
+  118: "Low SpO₂ (<95%): cyanosis · Dyspnea · Confusion · Tachycardia",
+  // GASTROENTEROLOGY
+  35:  "Gastric disease: epigastric pain · Nausea · Vomiting · Bloating · Hematemesis",
+  36:  "Liver disease: jaundice · Fatigue · RUQ pain · Ascites · Easy bruising",
+  37:  "Malabsorption: diarrhea · Weight loss · Bloating · Nutritional deficiencies",
+  38:  "Disease: diarrhea · Constipation · Rectal bleeding · Abdominal cramping",
+  39:  "Pancreatitis: severe epigastric pain radiating to back · Nausea · Vomiting",
+  40:  "Biliary colic: RUQ pain after fatty meals · Nausea · Vomiting · Murphy's sign",
+  41:  "Jaundice · Fatigue · RUQ pain · Nausea · Dark urine · Pale stools",
+  42:  "Jaundice · Ascites · Spider angiomata · Gynecomastia · Hepatic encephalopathy",
+  43:  "Epigastric burning pain · Nausea · Belching · Bloating · Hematemesis (if severe)",
+  44:  "Appendicitis: periumbilical pain → RLQ · Fever · Nausea · Rebound tenderness",
+  45:  "Dysphagia · Heartburn · Regurgitation · Chest pain",
+  119: "Abdominal pain · Diarrhea · Weight loss · Fatigue · Perianal disease · Skip lesions",
+  120: "Bloody diarrhea · Abdominal cramping · Urgency · Fatigue · Continuous colonic involvement",
+  121: "Epigastric burning · Relieved by food (duodenal) or worsened (gastric) · Hematemesis",
+  122: "Severe epigastric pain radiating to back · Nausea · Vomiting · Fever · Elevated lipase",
+  123: "Abdominal pain · Bloating · Altered bowel habits · No structural abnormality found",
+  124: "Biliary colic: RUQ/epigastric pain · Nausea · Vomiting · Worse after fatty meals",
+  125: "Heartburn · Regurgitation · Dysphagia · Chronic cough · Worse when lying flat",
+  126: "Colicky abdominal pain · Vomiting · Abdominal distension · No bowel movements/flatus",
+  // ORTHOPEDICS
+  46:  "Fracture: pain · Swelling · Deformity · Crepitus · Loss of function",
+  47:  "Pain · Swelling · Bruising · Deformity · Inability to bear weight",
+  48:  "Arthritis: pain · Swelling · Stiffness · Reduced range of motion",
+  49:  "Tendinopathy: pain on movement · Tenderness along tendon · Swelling",
+  50:  "Sprain: pain · Swelling · Bruising · Joint instability · Tenderness",
+  51:  "Joint pain · Morning stiffness · Swelling · Warmth · Reduced mobility",
+  52:  "Often asymptomatic until fracture · Height loss · Kyphosis · Back pain",
+  53:  "Damage: joint pain · Swelling · Clicking/locking · Reduced range of motion",
+  54:  "Strain: pain · Tenderness · Swelling · Limited movement",
+  55:  "Herniated disc: back pain · Radiculopathy · Numbness · Leg weakness",
+  127: "Severe pain · Visible deformity · Loss of joint function · Swelling",
+  128: "Pain · Swelling · Bruising · Tenderness · Difficulty bearing weight",
+  129: "Visible spinal curvature · Uneven shoulders/hips · Back pain · Rib prominence",
+  130: "Symmetric joint swelling/pain · Morning stiffness >1hr · Fatigue · Rheumatoid nodules",
+  131: "Low back pain · Sciatica · Numbness/tingling in leg · Weakness · Positive SLR test",
+  132: "Bone pain · Fever · Swelling · Redness · Warmth over affected bone · Elevated WBC",
+  // DERMATOLOGY
+  56:  "Impaired function: infection susceptibility · Dehydration risk · Impaired thermoregulation",
+  57:  "Intense itching · Red/dry/cracked skin · Weeping lesions · Lichenification (chronic)",
+  58:  "Silvery scaly plaques · Erythematous patches · Nail pitting · Koebner phenomenon",
+  59:  "Redness · Itching · Scaling · Vesicles · Weeping · Crusting",
+  60:  "Raised itchy wheals · Erythema · Angioedema · Triggered by allergens",
+  61:  "Asymmetric lesion · Irregular border · Color variation · Diameter >6mm · Evolving (ABCDE)",
+  62:  "Comedones (blackheads/whiteheads) · Papules · Pustules · Nodules · Scarring",
+  63:  "Erythema · Warmth · Swelling · Tenderness · Fever · Lymphadenopathy",
+  // ONCOLOGY
+  64:  "Weight loss · Fatigue · Night sweats · Fever · Unexplained bleeding · Palpable mass",
+  65:  "Varies by type: mass effect · Pain · Obstruction · Compression of nearby structures",
+  66:  "Side effects: nausea · Vomiting · Hair loss · Immunosuppression · Mucositis · Fatigue",
+  67:  "Local skin reaction · Fatigue · Mucositis in field · Long-term fibrosis risk",
+  68:  "Bone metastasis: pain · Fracture · Hypercalcemia · Spinal cord compression",
+  69:  "Procedure risks: bleeding · Infection · Pain at site · Diagnostic, not therapeutic",
+  70:  "Resolution of symptoms · Normalized tumor markers · No detectable disease on imaging",
+  71:  "Painless lymphadenopathy · Night sweats · Fever · Weight loss (B symptoms) · Splenomegaly",
+  72:  "Fatigue · Pallor · Recurrent infections · Easy bruising/bleeding · Bone pain",
+  // SYMPTOMS (contextual notes)
+  73:  "Types: nociceptive (sharp/aching) · Neuropathic (burning/tingling) · Referred · Chronic",
+  74:  "Shivering · Sweating · Headache · Myalgia · Tachycardia · Rigors",
+  75:  "Dry vs productive · Hemoptysis · Worse lying flat (GERD/HF) · Nocturnal (asthma)",
+  76:  "Pallor · Sweating · Hypersalivation · Malaise · Often precedes vomiting",
+  77:  "Weakness · Difficulty concentrating · Low energy · Sleep disturbance · Reduced function",
+  78:  "Assess: location · Severity · Quality (throbbing/pressure) · Associated symptoms",
+  79:  "Vertigo vs presyncope · Falls risk · Nausea · Nystagmus · Assess inner ear vs CNS",
+  80:  "Tachypnea · Use of accessory muscles · Cyanosis · Orthopnea · Wheeze or stridor",
+  81:  "Pitting vs non-pitting · Dependent edema · Lymphedema · Inflammatory swelling",
+  82:  "Macular · Papular · Vesicular · Pustular — distribution pattern aids diagnosis",
+  83:  "Nausea · Abdominal cramping · Dehydration risk · Electrolyte disturbance",
+  // GENERAL / LAB
+  84:  "Process: history · Physical examination · Investigations · Differential diagnosis",
+  85:  "Venipuncture required · Results: CBC · Metabolic panel · LFTs · Coagulation studies",
+  86:  "Quick and painless · Ionizing radiation · Ideal for: bone · Chest · Foreign bodies",
+  87:  "No radiation · Contraindicated with ferromagnetic implants · Best for soft tissue detail",
+  88:  "Urticaria · Angioedema · Rhinitis · Asthma · Anaphylaxis (severe, life-threatening)",
+  89:  "Must include: drug name · Dose · Route · Frequency · Duration · Prescriber details",
+  90:  "Routes: IV · IM · SC · Intradermal · Risks: pain · Infection · Hematoma",
+  91:  "Side effects: diarrhea · Allergy · Nausea · C. diff risk · Resistance if overused",
+  92:  "Common reactions: injection-site pain · Low-grade fever · Myalgia · Serious reactions rare",
+  93:  "Pre-op assessment · Anesthesia risk · Post-op: pain · DVT · Wound care · Recovery",
+  94:  "ABCDE: Airway · Breathing · Circulation · Disability · Exposure — primary survey",
+  95:  "No radiation · Real-time · Used for: abdomen · Cardiac (echo) · Obstetrics · Vascular",
+  96:  "Radiation exposure · Fast · Used for: head trauma · Abdomen · Chest · PE (CTPA)",
+  // ENDOCRINOLOGY
+  133: "Polyuria · Polydipsia · Polyphagia · Weight loss · Fatigue · Blurred vision",
+  134: "Fatigue · Weight gain · Cold intolerance · Constipation · Dry skin · Bradycardia · Depression",
+  135: "Weight loss · Heat intolerance · Palpitations · Tremor · Sweating · Diarrhea · Anxiety",
+  136: "Goiter (enlarged gland) · Hypothyroidism or hyperthyroidism if dysfunctional",
+  137: "Insufficiency: fatigue · Hypotension · Weight loss · Hyperpigmentation · Salt craving",
+  138: "Deficiency → hyperglycemia · Excess → hypoglycemia: sweating · Tremor · Confusion",
+  139: "Excess: hyperglycemia · Used clinically to reverse severe hypoglycemia",
+  140: "Central obesity · Moon face · Buffalo hump · Purple striae · Hypertension · Diabetes",
+  141: "Fatigue · Weight loss · Hyperpigmentation · Hypotension · Nausea · Salt craving",
+  142: "Excess or deficiency causes specific syndrome depending on the gland involved",
+  143: "Adenoma: headache · Visual field defects (bitemporal hemianopia) · Hormone excess/deficiency",
+  144: "Polyuria (large dilute volumes) · Polydipsia · Dehydration if fluid not replaced",
+  // NEPHROLOGY
+  145: "Failure: oliguria · Edema · Hypertension · Anemia · Electrolyte disturbances",
+  146: "Hematuria · Proteinuria · Hypertension · Edema · Decreased GFR",
+  147: "Massive proteinuria (>3.5g/day) · Hypoalbuminemia · Edema · Hyperlipidemia · Foamy urine",
+  148: "Oliguria · Rising creatinine/BUN · Electrolyte disturbances · Fluid overload",
+  149: "Fatigue · Anemia · Hypertension · Edema · Nausea · Bone disease (late)",
+  150: "Procedure effects: hypotension · Muscle cramps · Infection at vascular access site",
+  151: "Foamy urine · Edema · Indicates glomerular damage — screen with urine dipstick",
+  152: "Smoky/red urine · Clots · Associated: UTI · Kidney stones · Cancer · Glomerulonephritis",
+  153: "Severe colicky flank pain radiating to groin · Hematuria · Nausea · Vomiting · Dysuria",
+  154: "Nausea · Vomiting · Confusion · Pericarditis · Pruritus · Uremic frost (very late)",
+  // HEMATOLOGY
+  155: "Fatigue · Pallor · Dyspnea on exertion · Palpitations · Dizziness · Koilonychia (iron def)",
+  156: "Low Hb: anemia · High (polycythemia): thrombosis risk · Headache · Plethora",
+  157: "Low (thrombocytopenia): easy bruising · Petechiae · Bleeding · Purpura",
+  158: "High (leukocytosis): infection/malignancy · Low (leukopenia): susceptibility to infection",
+  159: "Low: anemia · High: polycythemia · Abnormal shape: hemolysis or hereditary disorders",
+  160: "DVT: leg swelling/pain · Arterial thrombus: ischemia/infarction · PE: dyspnea · Stroke",
+  161: "Disorders: prolonged bleeding · Easy bruising · Petechiae · Hemarthrosis",
+  162: "Prolonged bleeding after injury · Hemarthrosis · Easy bruising · Muscle hematomas",
+  163: "Vaso-occlusive crisis: severe bone/joint pain · Anemia · Jaundice · Splenic sequestration",
+  164: "Lymphadenopathy: enlarged nodes → infection · Malignancy · Autoimmune disease",
+  // INFECTIOUS DISEASE
+  165: "Fever or hypothermia · Tachycardia · Tachypnea · Altered mental status · Hypotension (shock)",
+  166: "Primary: flu-like illness · Chronic: recurrent infections · AIDS: CD4 <200 · Opportunistic infections",
+  167: "Sudden-onset fever · Myalgia · Headache · Fatigue · Dry cough · Sore throat",
+  168: "Skin: boils · Abscess · Cellulitis · Systemic: pneumonia · Bacteremia · Sepsis",
+  169: "Treatment failure · Persistent/worsening infection · Spread of resistant organisms",
+  170: "Monitor for: fever · Cough · Disease-specific symptoms during incubation period",
+  171: "Fever · Dry cough · Fatigue · Loss of taste/smell (anosmia) · Dyspnea · Severe: ARDS",
+  172: "Cyclic fever and chills · Headache · Myalgia · Splenomegaly · Anemia",
+  173: "Jaundice · Fatigue · RUQ pain · Nausea · Dark urine · Chronic: cirrhosis/HCC risk",
+  174: "Chronic cough >3 weeks · Hemoptysis · Night sweats · Weight loss · Fever",
+  175: "High fever · Severe headache · Retro-orbital pain · Rash · Myalgia · Thrombocytopenia",
+  176: "Candida: oral thrush · Vaginal discharge · Aspergillus: cough · Hemoptysis (immunocompromised)",
+  // OB / GYN
+  177: "Amenorrhea · Nausea/vomiting (morning sickness) · Breast tenderness · Fatigue · Weight gain",
+  178: "Regular contractions · Cervical dilation/effacement · Bloody show · Rupture of membranes",
+  179: "Post-op: pain · Restricted mobility · Longer recovery than vaginal delivery · Scar formation",
+  180: "Vaginal bleeding · Cramping · Passage of tissue · Loss of pregnancy symptoms",
+  181: "Pelvic pain · Vaginal bleeding · Shoulder tip pain (if ruptured) · Hemodynamic shock",
+  182: "Fibroids: heavy periods · Pelvic pain · Endometriosis: dysmenorrhea · Infertility",
+  183: "Cyst: pelvic pain · Bloating · PCOS: irregular periods · Hirsutism · Infertility",
+  184: "Previa: painless bleeding · Abruption: painful bleeding · Insufficiency: IUGR",
+  185: "Hypertension (≥140/90) · Proteinuria · Edema · Headache · Visual disturbances · Epigastric pain",
+  186: "Dysmenorrhea: cramping · PMS: mood changes · Menorrhagia: heavy bleeding",
+  // PSYCHIATRY
+  187: "Low mood · Anhedonia · Fatigue · Sleep disturbance · Appetite change · Poor concentration · Suicidal ideation",
+  188: "Excessive worry · Restlessness · Palpitations · Sweating · Tremor · Insomnia · Avoidance",
+  189: "Positive: hallucinations · Delusions · Disorganized speech · Negative: flat affect · Avolition",
+  190: "Mania: elevated mood · Decreased sleep · Grandiosity · Racing thoughts · Depression alternates",
+  191: "Flashbacks · Nightmares · Hypervigilance · Avoidance of triggers · Emotional numbing",
+  192: "Intrusive thoughts (obsessions) · Repetitive behaviors (compulsions) · Time-consuming rituals",
+  193: "Social communication difficulties · Restricted interests · Repetitive behaviors · Sensory sensitivities",
+  194: "Inattention · Hyperactivity · Impulsivity · Poor concentration · Forgetfulness · Disorganization",
+  195: "Auditory (hearing voices) · Visual · Tactile · Can occur in psychosis/delirium/intoxication",
+  196: "Persecutory · Grandiose · Referential · Somatic — fixed false beliefs not shared by culture",
+  // PHARMACOLOGY
+  197: "Therapeutic effects are disease-specific · Side effects possible · Dosing must be individualized",
+  198: "Sub-therapeutic: no effect · Therapeutic window: desired effect · Toxic: adverse effects",
+  199: "Common: nausea · Rare/serious: anaphylaxis · Hepatotoxicity · QT prolongation",
+  200: "Absolute vs relative · E.g., ACE inhibitors in pregnancy · Beta-blockers in severe asthma",
+  201: "Short t½: requires frequent dosing · Long t½: risk of accumulation · Steady-state ~5 half-lives",
+  202: "ADME: Absorption · Distribution · Metabolism (CYP450 enzymes) · Excretion (renal/hepatic)",
+  203: "NSAIDs: GI upset · Opioids: constipation/dependence · Paracetamol: hepatotoxicity in overdose",
+  204: "Bleeding risk · INR monitoring (warfarin) · Heparin: HIT risk · Reversal agents available",
+  205: "Increased urination · Hypokalemia · Dehydration · Hypotension · Gout (thiazides)",
+  206: "CYP450 interactions · Additive toxicity · Antagonism · Altered absorption or clearance",
+  // OPHTHALMOLOGY
+  207: "Gradual peripheral vision loss · Halos around lights · Eye pain/redness (acute attack) · High IOP",
+  208: "Blurred/cloudy vision · Glare · Halos · Faded colors · Difficulty with night vision",
+  209: "Detachment: flashes · Floaters · Curtain over vision · Diabetic retinopathy: gradual vision loss",
+  210: "Keratitis: eye pain · Photophobia · Tearing · Vision blurring · Corneal ulcer appearance",
+  211: "Central vision loss · Distorted/wavy lines (metamorphopsia) · Difficulty reading/recognizing faces",
+  212: "Red eye · Discharge (purulent/watery) · Itching · Crusting · Foreign body sensation",
+  // ENT
+  213: "Ear pain (otalgia) · Fever · Hearing loss · Tugging at ear (children) · Discharge if perforated",
+  214: "Ringing · Buzzing · Hissing in ears · Can be pulsatile (vascular) · Associated with hearing loss",
+  215: "Facial pain/pressure · Nasal congestion · Purulent discharge · Anosmia · Fever",
+  216: "Sore throat · Fever · Difficulty swallowing · Enlarged exudative tonsils · Lymphadenopathy",
+  217: "Spinning sensation · Nausea · Vomiting · Nystagmus · Worse with position change (BPPV)",
+  218: "Difficulty understanding speech · Asking others to repeat · Tinnitus · Social withdrawal",
+  // UROLOGY
+  219: "Cystitis: dysuria · Frequency · Urgency · Suprapubic pain · Hematuria",
+  220: "BPH: weak stream · Frequency · Nocturia · Prostatitis: pelvic pain · Dysuria · Fever",
+  221: "Dysuria · Frequency · Urgency · Suprapubic pain · Hematuria · Cloudy/foul-smelling urine",
+  222: "Stress: leakage with cough/sneeze/exertion · Urgency: sudden urge · Mixed type",
+  223: "Weak urine stream · Hesitancy · Frequency · Nocturia · Incomplete emptying · Straining",
+  224: "Inability to achieve/maintain erection · Reduced libido · Significant psychological impact",
+};
+
 /* ── STATE ─────────────────────────────────────────────────────────────────── */
 let searchQuery = "";
 let activeCategory = "All";
@@ -608,12 +863,17 @@ function renderCard(t) {
   if (t.defJa) defRows.push(`<div class="term-def-row"><span class="def-lang ja">日</span><span class="def-text ja-text">${t.defJa}</span></div>`);
   const defsHtml = defRows.length ? `<div class="term-defs">${defRows.join("")}</div>` : "";
 
+  const symptomsText = SYMPTOMS_MAP[t.id] || t.symptoms || null;
+  const symptomsHtml = symptomsText
+    ? `<div class="term-symptoms"><span class="symptoms-label">Signs &amp; Symptoms</span><span class="symptoms-text">${symptomsText}</span></div>`
+    : "";
+
   return `
     <div class="term-card" style="border-top-color:${color};">
       ${delBtn}
       <span class="cat-badge" style="background:${color};">${t.cat}</span>${customTag}
       <div class="term-en">${t.en}</div>
-      ${jpHtml}${kataHtml}${romaHtml}${defsHtml}
+      ${jpHtml}${kataHtml}${romaHtml}${defsHtml}${symptomsHtml}
     </div>`;
 }
 
@@ -664,6 +924,7 @@ function submitTerm(e) {
     katakana: d.get("katakana").trim() || null,
     def:      d.get("def").trim()      || null,
     defJa:    d.get("defJa").trim()    || null,
+    symptoms: d.get("symptoms").trim() || null,
     cat:      d.get("cat"),
     custom:   true,
   });
