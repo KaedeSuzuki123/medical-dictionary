@@ -465,25 +465,32 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
 .bm-svg { width: 180px; height: auto; flex-shrink: 0; }
 
 .bm-body-shape { fill: #f5f0ea; stroke: #c8b49a; stroke-width: 1.5; }
-.bm-marker {
-  fill: #dde8ff; stroke: #6b8ec8; stroke-width: 1.5;
-  transition: fill 0.2s, stroke 0.2s;
-}
-.bm-marker.bm-correct { fill: #bbf7d0; stroke: #16a34a; stroke-width: 1.5; }
-.bm-marker.bm-wrong   { fill: #fecaca; stroke: #dc2626; stroke-width: 1.5; }
-.bm-marker.bm-active  {
-  fill: #fef08a; stroke: #ca8a04; stroke-width: 2;
-  animation: bm-pulse 1s ease-in-out infinite;
-}
+.bm-leader        { stroke: #b0b8c8; stroke-width: 0.8; stroke-dasharray: 4,3; }
+.bm-hl-ring       { fill: #fef08a; opacity: 0; transition: opacity 0.25s; }
+.bm-inner-dot     { fill: #5a6878; }
+.bm-callout       { fill: #dde8ff; stroke: #5878b8; stroke-width: 1.5; }
+.bm-callout-num   { font-size: 9px; font-weight: 700; fill: #1a3060; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+
+.bm-part-active .bm-leader      { stroke: #d97706; stroke-dasharray: none; }
+.bm-part-active .bm-hl-ring     { opacity: 0.5; }
+.bm-part-active .bm-inner-dot   { fill: #d97706; }
+.bm-part-active .bm-callout     { fill: #fef08a; stroke: #ca8a04; stroke-width: 2.5; animation: bm-pulse 1s ease-in-out infinite; }
+.bm-part-active .bm-callout-num { fill: #7c2d12; }
+
+.bm-part-correct .bm-callout     { fill: #d1fae5; stroke: #16a34a; stroke-width: 1.5; animation: none; }
+.bm-part-correct .bm-callout-num { fill: #15803d; }
+.bm-part-correct .bm-inner-dot   { fill: #16a34a; }
+.bm-part-correct .bm-leader      { stroke: #16a34a; }
+
+.bm-part-wrong .bm-callout     { fill: #fee2e2; stroke: #dc2626; stroke-width: 1.5; animation: none; }
+.bm-part-wrong .bm-callout-num { fill: #991b1b; }
+.bm-part-wrong .bm-inner-dot   { fill: #dc2626; }
+.bm-part-wrong .bm-leader      { stroke: #dc2626; }
+
 @keyframes bm-pulse {
   0%, 100% { filter: drop-shadow(0 0 2px #fbbf24); }
-  50%       { filter: drop-shadow(0 0 7px #f59e0b); }
+  50%       { filter: drop-shadow(0 0 8px #f59e0b); }
 }
-.bm-num {
-  font-size: 6.5px; font-weight: 700; fill: #1a4a7c;
-  text-anchor: middle; dominant-baseline: central; pointer-events: none;
-}
-.bm-num.bm-active { fill: #78350f; }
 
 .bm-dir-label {
   text-align: center; font-size: 0.7rem; font-weight: 700;
@@ -686,25 +693,61 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
         <div class="bm-progress-bar"><div class="bm-progress-fill" id="bmProgressFill" style="width:6%"></div></div>
         <span class="bm-score-display" id="bmScoreDisplay">0/0</span>
       </div>
-      <div class="bm-body-wrap">
-        <svg class="bm-svg" viewBox="0 0 280 520" xmlns="http://www.w3.org/2000/svg">
-          <!-- Head -->
-          <ellipse cx="140" cy="48" rx="33" ry="36" class="bm-body-shape"/>
-          <!-- Neck -->
-          <rect x="129" y="81" width="22" height="23" rx="4" class="bm-body-shape"/>
-          <!-- Torso -->
-          <rect x="90" y="100" width="100" height="242" rx="18" class="bm-body-shape"/>
-          <!-- Left arm -->
-          <ellipse cx="72" cy="190" rx="15" ry="83" transform="rotate(-4 72 190)" class="bm-body-shape"/>
-          <!-- Right arm -->
-          <ellipse cx="208" cy="190" rx="15" ry="83" transform="rotate(4 208 190)" class="bm-body-shape"/>
-          <!-- Pelvis -->
-          <rect x="80" y="332" width="120" height="58" rx="26" class="bm-body-shape"/>
-          <!-- Left leg -->
-          <ellipse cx="114" cy="453" rx="20" ry="66" class="bm-body-shape"/>
-          <!-- Right leg -->
-          <ellipse cx="166" cy="453" rx="20" ry="66" class="bm-body-shape"/>
-          <!-- Organ markers (rendered by JS) -->
+      <div class="bm-body-wrap" style="display:block;">
+        <svg class="bm-svg" viewBox="0 0 500 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:480px;">
+          <!-- ── BODY OUTLINE ── -->
+          <ellipse cx="250" cy="48" rx="30" ry="34" class="bm-body-shape"/>
+          <rect x="236" y="79" width="28" height="22" rx="5" class="bm-body-shape"/>
+          <rect x="202" y="98" width="96" height="248" rx="20" class="bm-body-shape"/>
+          <ellipse cx="179" cy="188" rx="14" ry="80" transform="rotate(-4 179 188)" class="bm-body-shape"/>
+          <ellipse cx="321" cy="188" rx="14" ry="80" transform="rotate(4 321 188)" class="bm-body-shape"/>
+          <rect x="190" y="337" width="120" height="60" rx="26" class="bm-body-shape"/>
+          <ellipse cx="222" cy="453" rx="21" ry="62" class="bm-body-shape"/>
+          <ellipse cx="278" cy="453" rx="21" ry="62" class="bm-body-shape"/>
+
+          <!-- ── ORGAN SHAPES ── -->
+          <!-- Brain -->
+          <ellipse cx="250" cy="44" rx="19" ry="20" fill="#e8d5c4" stroke="#c8a882" stroke-width="1"/>
+          <line x1="250" y1="28" x2="250" y2="62" stroke="#c8a882" stroke-width="0.7" stroke-dasharray="2,2"/>
+          <!-- Thyroid (two lobes) -->
+          <ellipse cx="242" cy="93" rx="7" ry="6" fill="#f5c6c6" stroke="#d89898" stroke-width="1"/>
+          <ellipse cx="258" cy="93" rx="7" ry="6" fill="#f5c6c6" stroke="#d89898" stroke-width="1"/>
+          <!-- Trachea -->
+          <rect x="246" y="100" width="8" height="44" rx="3" fill="#c8dff5" stroke="#8ab0d8" stroke-width="1"/>
+          <!-- Left lung -->
+          <path d="M215,103 C207,112 202,138 202,165 C202,194 206,220 213,230 C219,235 227,233 231,224 C235,213 235,196 233,175 C231,150 227,126 223,111 C220,104 217,101 215,103Z" fill="#f5dfd8" stroke="#d0a898" stroke-width="1"/>
+          <!-- Right lung -->
+          <path d="M285,103 C293,112 298,138 298,165 C298,194 294,220 287,230 C281,235 273,233 269,224 C265,213 265,196 267,175 C269,150 273,126 277,111 C280,104 283,101 285,103Z" fill="#f5dfd8" stroke="#d0a898" stroke-width="1"/>
+          <!-- Heart -->
+          <path d="M238,152 C232,143 220,143 216,153 C211,164 223,180 238,191 C253,180 265,164 260,153 C256,143 244,143 238,152Z" fill="#f5a8a8" stroke="#d07878" stroke-width="1"/>
+          <!-- Aorta -->
+          <path d="M242,174 C242,188 246,200 250,210 C252,218 252,226 252,232" fill="none" stroke="#d07878" stroke-width="2.5"/>
+          <!-- Diaphragm -->
+          <path d="M202,234 C220,223 238,219 250,221 C262,219 280,223 298,234" fill="none" stroke="#82b882" stroke-width="4"/>
+          <!-- Liver -->
+          <path d="M256,238 C270,233 294,236 298,247 C303,260 298,273 285,277 C272,280 256,277 250,269 C244,261 244,243 256,238Z" fill="#c8a882" stroke="#a07855" stroke-width="1"/>
+          <!-- Stomach -->
+          <path d="M208,240 C207,231 216,226 225,229 C234,232 239,240 239,253 C239,265 234,273 222,275 C211,277 204,272 202,263 C199,254 202,249 208,240Z" fill="#d4c8f0" stroke="#a090c8" stroke-width="1"/>
+          <!-- Gallbladder -->
+          <ellipse cx="281" cy="281" rx="8" ry="10" fill="#c8e8b0" stroke="#78a858" stroke-width="1"/>
+          <!-- Pancreas -->
+          <path d="M212,270 C226,264 248,264 268,268 C277,270 278,276 268,280 C248,283 226,283 212,280 C204,278 204,273 212,270Z" fill="#f5e4c0" stroke="#c8b068" stroke-width="1"/>
+          <!-- Left kidney -->
+          <path d="M205,286 C198,292 196,303 199,312 C202,322 210,325 218,321 C224,317 225,310 223,302 C220,293 213,283 205,286Z" fill="#d8b4b4" stroke="#b08888" stroke-width="1"/>
+          <!-- Right kidney -->
+          <path d="M295,286 C302,292 304,303 301,312 C298,322 290,325 282,321 C276,317 275,310 277,302 C280,293 287,283 295,286Z" fill="#d8b4b4" stroke="#b08888" stroke-width="1"/>
+          <!-- Large intestine (outer frame) -->
+          <rect x="204" y="285" width="92" height="70" rx="18" fill="none" stroke="#b8a888" stroke-width="5"/>
+          <!-- Small intestine (coiled) -->
+          <ellipse cx="250" cy="308" rx="28" ry="24" fill="#e8d8c4" stroke="#c0b098" stroke-width="1"/>
+          <ellipse cx="250" cy="308" rx="18" ry="15" fill="#f0e8d8" stroke="#c0b098" stroke-width="0.8"/>
+          <ellipse cx="250" cy="308" rx="9"  ry="7"  fill="#e8d8c4" stroke="#c0b098" stroke-width="0.6"/>
+          <!-- Appendix -->
+          <ellipse cx="292" cy="350" rx="5" ry="10" transform="rotate(18 292 350)" fill="#f0c8c8" stroke="#d09090" stroke-width="1"/>
+          <!-- Bladder -->
+          <ellipse cx="250" cy="354" rx="20" ry="16" fill="#c8d8f0" stroke="#8898d0" stroke-width="1"/>
+
+          <!-- ── LEADER LINES + CALLOUT MARKERS (rendered by JS) ── -->
           <g id="bmMarkers"></g>
         </svg>
       </div>
@@ -2049,22 +2092,23 @@ function submitTerm(e) {
 
 /* ── BODY PARTS DATA ────────────────────────────────────────────────────────── */
 const BODY_PARTS = [
-  { nameJa: "脳",      reading: "のう",             nameEn: "Brain",           x: 140, y: 48  },
-  { nameJa: "甲状腺",  reading: "こうじょうせん",   nameEn: "Thyroid gland",   x: 150, y: 98  },
-  { nameJa: "気管",    reading: "きかん",            nameEn: "Trachea",         x: 128, y: 118 },
-  { nameJa: "肺",      reading: "はい",              nameEn: "Lung",            x: 110, y: 162 },
-  { nameJa: "心臓",    reading: "しんぞう",          nameEn: "Heart",           x: 126, y: 178 },
-  { nameJa: "大動脈",  reading: "だいどうみゃく",    nameEn: "Aorta",           x: 154, y: 196 },
-  { nameJa: "横隔膜",  reading: "おうかくまく",      nameEn: "Diaphragm",       x: 140, y: 218 },
-  { nameJa: "肝臓",    reading: "かんぞう",          nameEn: "Liver",           x: 163, y: 238 },
-  { nameJa: "胃",      reading: "い",                nameEn: "Stomach",         x: 116, y: 244 },
-  { nameJa: "胆嚢",    reading: "たんのう",          nameEn: "Gallbladder",     x: 166, y: 260 },
-  { nameJa: "膵臓",    reading: "すいぞう",          nameEn: "Pancreas",        x: 128, y: 265 },
-  { nameJa: "腎臓",    reading: "じんぞう",          nameEn: "Kidney",          x: 106, y: 278 },
-  { nameJa: "小腸",    reading: "しょうちょう",      nameEn: "Small intestine", x: 140, y: 296 },
-  { nameJa: "大腸",    reading: "だいちょう",        nameEn: "Large intestine", x: 156, y: 316 },
-  { nameJa: "虫垂",    reading: "ちゅうすい",        nameEn: "Appendix",        x: 172, y: 330 },
-  { nameJa: "膀胱",    reading: "ぼうこう",          nameEn: "Bladder",         x: 140, y: 350 },
+  // cx/cy = organ centre in SVG  |  calloutX/Y = numbered callout circle
+  { nameJa:"脳",     reading:"のう",           nameEn:"Brain",            cx:250, cy:44,  calloutX:420, calloutY:30  },
+  { nameJa:"甲状腺", reading:"こうじょうせん", nameEn:"Thyroid gland",    cx:254, cy:93,  calloutX:420, calloutY:82  },
+  { nameJa:"気管",   reading:"きかん",         nameEn:"Trachea",          cx:248, cy:122, calloutX:80,  calloutY:110 },
+  { nameJa:"肺",     reading:"はい",           nameEn:"Lung",             cx:218, cy:162, calloutX:80,  calloutY:148 },
+  { nameJa:"心臓",   reading:"しんぞう",       nameEn:"Heart",            cx:236, cy:172, calloutX:80,  calloutY:182 },
+  { nameJa:"大動脈", reading:"だいどうみゃく", nameEn:"Aorta",            cx:250, cy:200, calloutX:420, calloutY:178 },
+  { nameJa:"横隔膜", reading:"おうかくまく",   nameEn:"Diaphragm",        cx:268, cy:230, calloutX:420, calloutY:222 },
+  { nameJa:"肝臓",   reading:"かんぞう",       nameEn:"Liver",            cx:275, cy:254, calloutX:420, calloutY:250 },
+  { nameJa:"胃",     reading:"い",             nameEn:"Stomach",          cx:222, cy:252, calloutX:80,  calloutY:250 },
+  { nameJa:"胆嚢",   reading:"たんのう",       nameEn:"Gallbladder",      cx:281, cy:279, calloutX:420, calloutY:278 },
+  { nameJa:"膵臓",   reading:"すいぞう",       nameEn:"Pancreas",         cx:242, cy:274, calloutX:80,  calloutY:278 },
+  { nameJa:"腎臓",   reading:"じんぞう",       nameEn:"Kidney",           cx:211, cy:304, calloutX:80,  calloutY:305 },
+  { nameJa:"小腸",   reading:"しょうちょう",   nameEn:"Small intestine",  cx:256, cy:308, calloutX:420, calloutY:308 },
+  { nameJa:"大腸",   reading:"だいちょう",     nameEn:"Large intestine",  cx:218, cy:322, calloutX:80,  calloutY:334 },
+  { nameJa:"虫垂",   reading:"ちゅうすい",     nameEn:"Appendix",         cx:290, cy:348, calloutX:420, calloutY:342 },
+  { nameJa:"膀胱",   reading:"ぼうこう",       nameEn:"Bladder",          cx:250, cy:354, calloutX:80,  calloutY:360 },
 ];
 
 /* ── BODY MAP STATE ──────────────────────────────────────────────────────────── */
@@ -2090,9 +2134,14 @@ function startBodyMap() {
 
 function renderBMMarkers() {
   document.getElementById("bmMarkers").innerHTML = BODY_PARTS.map((p, i) => `
-    <circle id="bm-dot-${i}" class="bm-marker" cx="${p.x}" cy="${p.y}" r="8"/>
-    <text   id="bm-num-${i}" class="bm-num"    x="${p.x}"  y="${p.y}">${i + 1}</text>
-  `).join("");
+    <g id="bm-part-${i}">
+      <line class="bm-leader"   x1="${p.calloutX}" y1="${p.calloutY}" x2="${p.cx}" y2="${p.cy}"/>
+      <circle class="bm-hl-ring"    cx="${p.cx}"        cy="${p.cy}"        r="18"/>
+      <circle class="bm-inner-dot"  cx="${p.cx}"        cy="${p.cy}"        r="4"/>
+      <circle class="bm-callout"    cx="${p.calloutX}"  cy="${p.calloutY}"  r="12"/>
+      <text   class="bm-callout-num" x="${p.calloutX}"  y="${p.calloutY}">${i + 1}</text>
+    </g>`
+  ).join("");
 }
 
 function renderBMQuestion() {
@@ -2110,14 +2159,12 @@ function renderBMQuestion() {
   document.getElementById("bmFeedback").className       = "bm-feedback";
   document.getElementById("bmNextBtn").classList.remove("visible");
 
-  // Highlight the active marker, keep state of already-answered ones
-  BODY_PARTS.forEach((p, i) => {
-    const dot = document.getElementById(`bm-dot-${i}`);
-    const num = document.getElementById(`bm-num-${i}`);
-    if (!dot) return;
-    dot.classList.remove("bm-active");
-    num.classList.remove("bm-active");
-    if (i === origI) { dot.classList.add("bm-active"); num.classList.add("bm-active"); }
+  // Highlight active callout; preserve correct/wrong state of others
+  BODY_PARTS.forEach((_, i) => {
+    const grp = document.getElementById(`bm-part-${i}`);
+    if (!grp) return;
+    grp.classList.remove("bm-part-active");
+    if (i === origI) grp.classList.add("bm-part-active");
   });
 
   // 4 choices — correct + 3 random others
@@ -2141,21 +2188,21 @@ function bmSelectChoice(i, ci) {
   const origI = BODY_PARTS.indexOf(part);
   document.querySelectorAll(".bm-choice").forEach(b => b.disabled = true);
 
-  const dot = document.getElementById(`bm-dot-${origI}`);
-  dot.classList.remove("bm-active");
+  const grp = document.getElementById(`bm-part-${origI}`);
+  grp.classList.remove("bm-part-active");
 
   if (i === ci) {
     bmCorrect++;
     document.querySelectorAll(".bm-choice")[i].classList.add("correct");
     document.getElementById("bmFeedback").textContent = `✓ ${part.nameJa}（${part.nameEn}）`;
     document.getElementById("bmFeedback").className   = "bm-feedback correct";
-    dot.classList.add("bm-correct");
+    grp.classList.add("bm-part-correct");
   } else {
     document.querySelectorAll(".bm-choice")[i].classList.add("wrong");
     document.querySelectorAll(".bm-choice")[ci].classList.add("revealed");
     document.getElementById("bmFeedback").textContent = `✗ 正解：${part.nameJa}（${part.nameEn}）`;
     document.getElementById("bmFeedback").className   = "bm-feedback wrong";
-    dot.classList.add("bm-wrong");
+    grp.classList.add("bm-part-wrong");
   }
 
   document.getElementById("bmScoreDisplay").textContent = `${bmCorrect}/${bmTotal}`;
