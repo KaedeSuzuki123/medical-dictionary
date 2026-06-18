@@ -118,6 +118,7 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
 }
 .term-symptoms { margin-top: 0.45rem; padding-top: 0.45rem; border-top: 1px dashed #e8eaf0; }
 .symptoms-label { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; background: #f0f4ff; color: #3a5cb8; border-radius: 3px; padding: 0.1rem 0.4rem; margin-right: 0.4rem; vertical-align: middle; font-family: 'Yu Gothic','Hiragino Kaku Gothic Pro',sans-serif; }
+.treatment-label { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; background: #e8f5e9; color: #2e7d32; border-radius: 3px; padding: 0.1rem 0.4rem; margin-right: 0.4rem; vertical-align: middle; font-family: 'Yu Gothic','Hiragino Kaku Gothic Pro',sans-serif; }
 .symptoms-text { font-size: 0.79rem; color: #4a5060; line-height: 1.6; font-family: 'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif; }
 .term-def-row { display: flex; gap: 0.45rem; align-items: flex-start; }
 .def-lang {
@@ -1710,9 +1711,14 @@ function renderCard(t) {
   if (t.def)   defRows.push(`<div class="term-def-row"><span class="def-lang en">EN</span><span class="def-text">${t.def}</span></div>`);
   const defsHtml = defRows.length ? `<div class="term-defs">${defRows.join("")}</div>` : "";
 
-  const sympText = SYMPTOMS_JA_MAP[t.id] || t.symptoms || null;
-  const sympHtml = sympText
+  const sympText  = SYMPTOMS_JA_MAP[t.id] || t.symptoms || null;
+  const sympHtml  = sympText
     ? `<div class="term-symptoms"><span class="symptoms-label">症状・徴候</span><span class="symptoms-text">${sympText}</span></div>`
+    : "";
+
+  const treatText = TREATMENT_MAP[t.id] || null;
+  const treatHtml = treatText
+    ? `<div class="term-symptoms"><span class="treatment-label">治療</span><span class="symptoms-text">${treatText}</span></div>`
     : "";
 
   return `
@@ -1723,7 +1729,7 @@ function renderCard(t) {
       ${jpHtml}
       <div class="expand-hint">▾ タップして詳細を表示</div>
       <div class="expanded-view">
-        ${kataHtml}${romaHtml}${defsHtml}${sympHtml}
+        ${kataHtml}${romaHtml}${defsHtml}${sympHtml}${treatHtml}
       </div>
       <div class="collapse-hint">▴ 閉じる</div>
     </div>`;
