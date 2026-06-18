@@ -444,6 +444,19 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
 .results-btn.primary:hover { background: var(--primary-dark); }
 .results-btn.ghost { background: white; color: var(--muted); border: 1.5px solid var(--border); }
 .results-btn.ghost:hover { border-color: #aaa; color: var(--text); }
+
+.study-focus-row {
+  display: flex; gap: 0.45rem; margin-bottom: 1rem;
+}
+.focus-pill {
+  flex: 1; padding: 0.4rem 0.4rem;
+  border: 1.5px solid var(--border); border-radius: 6px;
+  background: white; color: var(--muted);
+  font-size: 0.76rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.15s; text-align: center;
+}
+.focus-pill:hover { border-color: var(--primary); color: var(--primary); }
+.focus-pill.active { border-color: var(--primary); background: var(--primary); color: white; }
 </style>
 </head>
 <body>
@@ -494,7 +507,12 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
             <div class="mode-card-desc">4-choice multiple choice</div>
           </button>
         </div>
-        <div class="study-option-row">
+        <div class="study-focus-row">
+          <button class="focus-pill active" data-focus="vocabulary" onclick="selectStudyFocus('vocabulary')">📚 Vocabulary</button>
+          <button class="focus-pill" data-focus="symptoms"  onclick="selectStudyFocus('symptoms')">🩺 Symptoms</button>
+          <button class="focus-pill" data-focus="treatment" onclick="selectStudyFocus('treatment')">💊 Treatment</button>
+        </div>
+        <div id="studyDirRow" style="margin-bottom:0.75rem;">
           <div class="study-option">
             <label>Direction</label>
             <select id="studyDirSelect">
@@ -502,6 +520,8 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
               <option value="ja-en">日本語 → EN</option>
             </select>
           </div>
+        </div>
+        <div class="study-option-row" style="grid-template-columns:1fr 1fr;">
           <div class="study-option">
             <label>Category</label>
             <select id="studyCatSelect"></select>
@@ -1465,6 +1485,135 @@ const SYMPTOMS_JA_MAP = {
   224: "十分な勃起の達成/維持困難 · 性欲低下 · 心理的影響が大きい",
 };
 
+/* ── TREATMENT MAP ──────────────────────────────────────────────────────────── */
+const TREATMENT_MAP = {
+  // CARDIOLOGY
+  2:   "CPR + immediate defibrillation (AED); epinephrine 1 mg IV q3-5 min; treat reversible causes (4H4T).",
+  3:   "Dual antiplatelet therapy (aspirin + clopidogrel); primary PCI within 90 min; thrombolysis if PCI unavailable; beta-blockers, ACEi, statins long-term.",
+  4:   "Lifestyle changes (low-salt diet, exercise, weight loss); antihypertensives: ACEi/ARB, CCB, thiazide diuretic; stepped-care approach.",
+  5:   "Rate control (beta-blockers, digoxin, CCBs); rhythm control (amiodarone, cardioversion); anticoagulation for AF (NOAC/warfarin); catheter ablation.",
+  6:   "Diuretics (furosemide), ACEi/ARB, beta-blockers, MRA (spironolactone); CRT for dyssynchrony; heart transplant in refractory cases.",
+  8:   "Sublingual nitrates (acute); beta-blockers, CCBs, long-acting nitrates for prevention; revascularization (PCI or CABG) if refractory.",
+  11:  "Rate control (beta-blockers, CCBs) or rhythm control (amiodarone, flecainide); anticoagulation (NOAC/warfarin); cardioversion; catheter ablation.",
+  97:  "Immediate CPR + defibrillation; epinephrine, amiodarone IV; treat reversible causes; therapeutic hypothermia post-ROSC.",
+  98:  "NSAIDs or colchicine (viral/idiopathic); antibiotics (bacterial); immunosuppression (autoimmune); activity restriction; supportive care.",
+  99:  "Prolonged IV antibiotics 4–6 weeks (penicillin + gentamicin for streptococci); valve repair/replacement surgery if severe regurgitation or uncontrolled infection.",
+  100: "Emergency pericardiocentesis; treat underlying cause; surgical window if recurrent.",
+  101: "Anticoagulation (LMWH → NOAC/warfarin for 3–6 months); compression stockings; thrombolysis for limb-threatening DVT; IVC filter if anticoagulation contraindicated.",
+  // NEUROLOGY
+  14:  "Ischemic: IV tPA within 4.5 h; mechanical thrombectomy for large-vessel occlusion; aspirin + statin secondary prevention; AF → anticoagulation.",
+  15:  "Antiepileptics (valproate, levetiracetam, lamotrigine, carbamazepine); ketogenic diet; resective surgery or VNS/DBS if drug-resistant.",
+  16:  "Acute: triptans (sumatriptan), NSAIDs, antiemetics. Prophylaxis: propranolol, amitriptyline, topiramate, CGRP antagonists.",
+  17:  "Levodopa/carbidopa (gold standard); dopamine agonists; MAO-B inhibitors; COMT inhibitors; deep brain stimulation (DBS) for advanced disease.",
+  18:  "Cholinesterase inhibitors (donepezil, rivastigmine, galantamine); memantine for moderate–severe; supportive care and cognitive stimulation.",
+  21:  "Disease-modifying therapies (interferons, glatiramer, natalizumab, ocrelizumab); IV methylprednisolone for acute relapses; physiotherapy.",
+  22:  "Bacterial: IV ceftriaxone + vancomycin ± dexamethasone. Viral: supportive ± aciclovir (HSV). Fungal: amphotericin B.",
+  105: "Antiplatelet therapy (aspirin ± clopidogrel short-term); statin; treat risk factors (hypertension, AF, diabetes); no thrombolysis indicated.",
+  107: "Treat underlying cause; B12 for deficiency neuropathy; glycaemic control for diabetic; gabapentin/duloxetine for neuropathic pain.",
+  108: "Multidisciplinary supportive care; riluzole slows progression; non-invasive ventilation; PEG for nutrition; no curative treatment currently.",
+  110: "VP shunt or endoscopic third ventriculostomy (ETV) to drain CSF; treat underlying cause (tumour, infection, haemorrhage).",
+  // PULMONOLOGY
+  26:  "Acute: SABA (salbutamol) inhaler. Maintenance: inhaled corticosteroids + LABA; systemic steroids for exacerbations; avoid triggers; biologics for severe eosinophilic asthma.",
+  27:  "Community-acquired: amoxicillin ± macrolide (outpatient); piperacillin-tazobactam (inpatient); IV fluids; oxygen; physiotherapy.",
+  28:  "Acute: rest, fluids, analgesia; antibiotics only if bacterial (doxycycline); smoking cessation for chronic bronchitis.",
+  29:  "Smoking cessation (most important); bronchodilators (SABA, LABA, LAMA); inhaled corticosteroids; pulmonary rehab; supplemental oxygen (SpO₂ <88%); NPPV.",
+  32:  "Anticoagulation (LMWH then NOAC/warfarin ≥3 months); systemic thrombolysis for massive PE; catheter-directed thrombolysis; IVC filter if contraindicated.",
+  33:  "RIPE: Rifampicin + Isoniazid + Pyrazinamide + Ethambutol × 2 months, then Rifampicin + Isoniazid × 4 months (6 months total); DOTS.",
+  113: "Small/stable: oxygen, observation. Tension: immediate needle decompression (2nd ICS MCL) then chest drain. Large: chest drain.",
+  114: "Treat underlying cause; thoracocentesis if symptomatic; chest drain for empyema or large effusion.",
+  115: "Supplemental oxygen; treat underlying cause; non-invasive ventilation (BiPAP); mechanical ventilation if severe; treat underlying ARDS.",
+  116: "Weight loss; CPAP therapy (1st-line); positional therapy; mandibular advancement device; surgical options in selected cases.",
+  // GASTROENTEROLOGY
+  41:  "Hep A/E: supportive (self-limiting). Hep B: tenofovir/entecavir (chronic). Hep C: sofosbuvir-based DAA regimens (8–12 weeks); avoid alcohol.",
+  42:  "Abstinence from alcohol; manage complications: spironolactone + furosemide (ascites), propranolol + banding (varices), lactulose (HE); liver transplant (end-stage).",
+  43:  "PPI or H2 blocker; H. pylori eradication if positive; avoid NSAIDs and alcohol; antacids for symptom relief.",
+  119: "5-ASA (mild); corticosteroids (moderate); azathioprine/6-MP; biologics (infliximab, adalimumab, vedolizumab, ustekinumab); surgery for complications.",
+  120: "5-ASA (mesalazine) mild–moderate; corticosteroids; azathioprine; biologics (infliximab, vedolizumab); proctocolectomy if refractory or high-grade dysplasia.",
+  121: "PPI + H. pylori eradication (triple therapy: amoxicillin + clarithromycin + PPI × 7–14 days); stop NSAIDs; sucralfate; endoscopic haemostasis if bleeding.",
+  122: "Fasting, IV fluids, strong analgesia (IV opioids); ERCP for biliary cause; antibiotics if infected/necrotising; surgery/percutaneous drainage for complications.",
+  123: "Low-FODMAP diet; antispasmodics (mebeverine); loperamide (diarrhoea type); laxatives (constipation type); low-dose TCAs/SSRIs; CBT.",
+  124: "Biliary colic: NSAIDs; laparoscopic cholecystectomy (elective or urgent); ERCP + sphincterotomy for CBD stones.",
+  125: "Lifestyle changes (elevate bed head, avoid late meals, lose weight); PPIs; H2 blockers; Nissen fundoplication for refractory cases.",
+  // ORTHOPEDICS
+  47:  "RICE (Rest, Ice, Compression, Elevation); analgesia; immobilisation (cast/splint/brace); surgical fixation for displaced/open/complex fractures.",
+  51:  "Analgesia (paracetamol, NSAIDs); physiotherapy; intra-articular corticosteroids; hyaluronic acid; joint replacement (end-stage osteoarthritis).",
+  52:  "Calcium + vitamin D supplementation; bisphosphonates (alendronate first-line); denosumab; teriparatide for severe/refractory; fall prevention.",
+  127: "Immediate closed reduction (with analgesia/sedation) then immobilisation; post-reduction X-ray; physiotherapy; open reduction if irreducible.",
+  128: "RICE; NSAIDs; physiotherapy and graduated weight-bearing; functional bracing; surgical repair for complete rupture of key ligaments.",
+  129: "Observation + physiotherapy (mild <20°); thoracolumbar brace (20–40°, adolescents); surgical spinal fusion for progressive curves >40–45°.",
+  130: "DMARDs: methotrexate first-line; leflunomide; biologics (TNF inhibitors, rituximab, tocilizumab); corticosteroids bridge; physiotherapy.",
+  131: "NSAIDs + analgesia; physiotherapy; epidural steroid injection; microdiscectomy or PLIF if refractory or progressive neurological deficit.",
+  132: "IV antibiotics 4–6 weeks (flucloxacillin or ceftriaxone); surgical debridement if chronic or abscess formation; treat underlying source.",
+  // DERMATOLOGY
+  57:  "Emollients (key); topical corticosteroids; calcineurin inhibitors; antihistamines for itch; dupilumab/tralokinumab for moderate–severe; avoid triggers.",
+  58:  "Topical: corticosteroids, vitamin D analogues, calcineurin inhibitors. Systemic: methotrexate, cyclosporine, biologics (adalimumab, secukinumab). Phototherapy (NB-UVB).",
+  60:  "Antihistamines (cetirizine, fexofenadine); short-course corticosteroids for severe; IM epinephrine for anaphylaxis; identify and avoid trigger; omalizumab for chronic.",
+  61:  "Wide local excision with appropriate margins; sentinel lymph node biopsy; immunotherapy (pembrolizumab, nivolumab) for metastatic; targeted therapy (BRAF/MEK inhibitors).",
+  63:  "Oral/IV antibiotics (flucloxacillin or amoxicillin-clavulanate); mark erythema margins to monitor progression; elevate affected limb; IV if severe/systemic features.",
+  // ONCOLOGY
+  64:  "Surgery, chemotherapy, radiation, targeted therapy, and/or immunotherapy — treatment depends on cancer type, stage, and patient fitness.",
+  66:  "Platinum-based regimens (cisplatin/carboplatin); combined with targeted agents (bevacizumab) or immunotherapy; anti-emetics, G-CSF support.",
+  67:  "External beam radiation (EBRT); brachytherapy; stereotactic radiosurgery; chemoradiation for radiosensitive cancers (head/neck, cervix).",
+  71:  "Hodgkin: ABVD ± radiotherapy. Non-Hodgkin: R-CHOP. Relapsed: autologous stem cell transplant; CAR-T cell therapy.",
+  72:  "AML: induction chemotherapy (7+3); ALL: multi-agent protocol; CML: imatinib (TKI) highly effective; allogeneic SCT for high-risk.",
+  // ENDOCRINOLOGY
+  133: "Type 1: basal-bolus insulin regimen. Type 2: metformin first-line, then SGLT2i/GLP-1 agonists/DPP-4i/insulin; lifestyle modification; monitor HbA1c.",
+  134: "Levothyroxine (T4) replacement, titrated to normalise TSH; lifelong therapy; recheck TSH 6–8 weeks after dose change.",
+  135: "Antithyroid drugs (carbimazole/propylthiouracil); beta-blockers for symptomatic relief; radioactive iodine (RAI); thyroidectomy.",
+  140: "Pituitary adenoma: transsphenoidal surgery; adrenal enzyme inhibitors (ketoconazole, metyrapone) to reduce cortisol; bilateral adrenalectomy.",
+  141: "Hydrocortisone (cortisol replacement) + fludrocortisone (mineralocorticoid); doubled/tripled dose during illness (sick-day rules); IM hydrocortisone for adrenal crisis.",
+  143: "Pituitary adenoma: transsphenoidal surgery; dopamine agonists (cabergoline) for prolactinoma; gamma-knife radiotherapy; hormone replacement for deficiencies.",
+  144: "Central DI: desmopressin (DDAVP) intranasal or oral; adequate fluid intake; treat underlying cause. Nephrogenic DI: low-salt diet, thiazides, NSAIDs.",
+  // NEPHROLOGY
+  146: "Treat underlying cause; corticosteroids ± cyclophosphamide or rituximab; ACEi/ARB to reduce proteinuria; BP control; avoid nephrotoxins.",
+  147: "Corticosteroids (prednisolone); immunosuppressants (cyclophosphamide, tacrolimus); ACEi/ARB; diuretics for oedema; salt/fluid restriction.",
+  148: "Identify and reverse underlying cause (IV fluids for hypovolaemia, stop nephrotoxins, relieve obstruction); strict fluid and electrolyte balance; RRT if severe.",
+  149: "ACEi/ARB; tight BP and glucose control; manage anaemia (EPO + iron), acidosis (sodium bicarbonate), bone disease (vitamin D + phosphate binders); dialysis or transplant.",
+  150: "Haemodialysis (AV fistula preferred, 3×/week) or peritoneal dialysis; renal transplant is the preferred long-term treatment for eligible patients.",
+  153: "Analgesia (NSAIDs/opioids); IV fluids; tamsulosin (alpha-blocker) for ureteric stones <10 mm; ESWL; ureteroscopy + laser; PCNL for large staghorn stones.",
+  // HEMATOLOGY
+  155: "Iron-deficiency: oral iron (ferrous sulfate). B12/folate: supplementation. Chronic disease: treat underlying. Severe or symptomatic: red cell transfusion.",
+  162: "Factor VIII concentrate (haemophilia A) or Factor IX (haemophilia B); desmopressin for mild HA; prophylactic factor infusions; gene therapy emerging.",
+  163: "Hydroxyurea (reduces crises frequency); voxelotor/crizanlizumab; analgesia for vaso-occlusive crisis; exchange transfusion; folic acid; penicillin prophylaxis; SCT (curative).",
+  // INFECTIOUS DISEASE
+  165: "Sepsis bundle within 1 hour: blood cultures → broad-spectrum IV antibiotics, 30 mL/kg IV crystalloid, vasopressors (noradrenaline) if hypotensive; source control.",
+  166: "Lifelong ART (HAART): NRTI backbone + INSTI or NNRTI or PI; treat and prevent opportunistic infections; PrEP (tenofovir/emtricitabine) for prevention.",
+  167: "Supportive (rest, fluids, antipyretics); oseltamivir within 48 h for high-risk patients; annual vaccination (primary prevention).",
+  168: "Vancomycin IV (systemic MRSA); linezolid or daptomycin for resistant cases; incision and drainage of abscesses; infection control precautions.",
+  172: "Artemisinin-based combination therapy (ACT) first-line; chloroquine for P. vivax/ovale; primaquine to prevent relapse; vector control (ITNs, IRS).",
+  173: "Hep B acute: usually self-limiting. Chronic Hep B: tenofovir or entecavir. Hep C: sofosbuvir-based DAAs (8–12 weeks, >95% cure). Vaccination for prevention.",
+  174: "RIPE regimen × 6 months; DOTS; contact tracing and latent TB treatment (isoniazid × 6 months); MDR-TB: second-line agents (bedaquiline, delamanid).",
+  175: "Supportive: IV fluid resuscitation, antipyretics (paracetamol — avoid NSAIDs/aspirin); careful monitoring for warning signs; no specific antiviral; vector control.",
+  // OB / GYN
+  180: "Expectant (if stable); medical (misoprostol); surgical (suction curettage / ERPC); anti-D immunoglobulin if Rh-negative; psychological support.",
+  181: "Stable/unruptured: methotrexate IM (medical). Ruptured or failed medical: laparoscopic salpingectomy or salpingostomy (surgical); transfusion if haemodynamically unstable.",
+  185: "IV labetalol or oral nifedipine (antihypertensives); IV magnesium sulfate (seizure prophylaxis/eclampsia); corticosteroids for fetal lung maturity if preterm; delivery is definitive.",
+  // PSYCHIATRY
+  187: "SSRIs (fluoxetine, sertraline) first-line; SNRIs; CBT and other psychotherapies; ECT for severe treatment-resistant depression; lifestyle interventions.",
+  188: "SSRIs/SNRIs (first-line); buspirone; CBT with exposure therapy; benzodiazepines for short-term acute relief only; avoid caffeine.",
+  189: "Antipsychotics: olanzapine, risperidone, quetiapine, haloperidol; clozapine for treatment-resistant; psychosocial rehabilitation; CBT for psychosis.",
+  190: "Acute mania: antipsychotics + mood stabiliser (lithium/valproate). Maintenance: lithium (first-line), valproate, lamotrigine; psychoeducation; no antidepressant monotherapy.",
+  191: "Trauma-focused CBT (first-line); EMDR; SSRIs (sertraline, paroxetine); prazosin for nightmares; avoid benzodiazepines long-term.",
+  192: "SSRIs at high doses (e.g., fluoxetine 60–80 mg); clomipramine; CBT with ERP (exposure and response prevention); combination for refractory OCD.",
+  193: "ABA and behavioural therapies; speech and occupational therapy; educational support; treat comorbidities; no pharmacological cure.",
+  194: "Stimulants (methylphenidate, amphetamines) — first-line; atomoxetine (non-stimulant); behavioural therapy; parent/teacher training.",
+  // OPHTHALMOLOGY
+  207: "Eye drops: prostaglandin analogues (latanoprost), beta-blockers (timolol), CAIs, alpha-agonists; selective laser trabeculoplasty (SLT); trabeculectomy surgery.",
+  208: "No pharmacological treatment; phacoemulsification + intraocular lens (IOL) implant; surgery is curative.",
+  211: "Dry AMD: AREDS2 supplements, no cure. Wet AMD: intravitreal anti-VEGF injections (ranibizumab, aflibercept, bevacizumab) monthly/PRN.",
+  212: "Bacterial: topical antibiotics (chloramphenicol, fusidic acid). Viral: lubricants ± aciclovir. Allergic: antihistamine drops; avoid contact lenses during infection.",
+  // ENT
+  213: "Watchful waiting 48–72 h (most self-resolve); amoxicillin if severe, under 2 years, or bilateral; analgesia; myringotomy + grommet for recurrent cases.",
+  215: "Saline nasal irrigation; intranasal corticosteroids; antibiotics only if bacterial and >10 days or severe (amoxicillin); FESS for chronic sinusitis.",
+  216: "Group A Strep: amoxicillin/phenoxymethylpenicillin 10 days; viral: supportive (analgesics, fluids); tonsillectomy for recurrent or peritonsillar abscess.",
+  217: "BPPV: Epley manoeuvre (highly effective). Ménière's: betahistine, low-salt diet, diuretics, intratympanic steroids/gentamicin, surgery. Vestibular rehabilitation.",
+  // UROLOGY
+  221: "Uncomplicated: nitrofurantoin or trimethoprim 3–7 days. Complicated/pyelonephritis: ciprofloxacin 7–14 days; IV antibiotics if septic.",
+  222: "Pelvic floor exercises (Kegel); bladder training; anticholinergics/mirabegron for urgency; duloxetine for stress; surgical mid-urethral sling for refractory stress UI.",
+  223: "Alpha-blockers (tamsulosin) first-line; 5-alpha reductase inhibitors (finasteride) for large prostate; combination; TURP or laser prostatectomy for severe/refractory.",
+  224: "PDE5 inhibitors (sildenafil, tadalafil) first-line; treat underlying cause (vascular, hormonal); vacuum erection device; intracavernosal injections; penile implant.",
+};
+
 /* ── STATE ─────────────────────────────────────────────────────────────────── */
 let searchQuery = "";
 let activeCategory = "All";
@@ -1640,6 +1789,7 @@ function submitTerm(e) {
 let studyMode  = "flashcard";
 let studyDir   = "en-ja";
 let studyCat   = "All";
+let studyFocus = "vocabulary";
 let studyTerms = [];
 let studyIndex = 0;
 let fcFlipped  = false;
@@ -1669,10 +1819,11 @@ function showStudySetup() {
     "Study Mode &nbsp;·&nbsp; <span style=\"font-family:'Yu Gothic',sans-serif;font-weight:400;font-size:0.9em;\">学習モード</span>";
 
   const sel = document.getElementById("studyCatSelect");
-  const cats = getCategories();
-  sel.innerHTML = cats.map(c =>
+  sel.innerHTML = getCategories().map(c =>
     `<option value="${c}">${c}${CAT_JA[c] ? " — " + CAT_JA[c] : ""}</option>`
   ).join("");
+
+  updateFocusUI();
 }
 
 function selectStudyMode(mode) {
@@ -1681,26 +1832,38 @@ function selectStudyMode(mode) {
   document.querySelector(`.mode-card[data-mode="${mode}"]`).classList.add("selected");
 }
 
+function selectStudyFocus(focus) {
+  studyFocus = focus;
+  document.querySelectorAll(".focus-pill").forEach(el => el.classList.remove("active"));
+  document.querySelector(`.focus-pill[data-focus="${focus}"]`).classList.add("active");
+  updateFocusUI();
+}
+
+function updateFocusUI() {
+  document.getElementById("studyDirRow").style.display = studyFocus === "treatment" ? "none" : "";
+}
+
 function startStudy() {
   studyDir = document.getElementById("studyDirSelect").value;
   studyCat = document.getElementById("studyCatSelect").value;
   const countVal = document.getElementById("studyCountSelect").value;
 
-  let pool = getAllTerms().filter(t =>
-    (studyCat === "All" || t.cat === studyCat) && (t.kanji || t.reading)
-  );
+  const pool = getAllTerms().filter(t => {
+    if (studyCat !== "All" && t.cat !== studyCat) return false;
+    if (studyFocus === "vocabulary") return !!(t.kanji || t.reading);
+    if (studyFocus === "symptoms")   return SYMPTOMS_MAP[t.id] != null;
+    if (studyFocus === "treatment")  return TREATMENT_MAP[t.id] != null;
+    return false;
+  });
 
-  if (studyMode === "quiz" && pool.length < 4) {
-    alert("Need at least 4 terms in this category for quiz mode. Try a broader category.");
-    return;
-  }
-  if (pool.length === 0) {
-    alert("No terms found. Please choose a different category.");
+  const minNeeded = studyMode === "quiz" ? 4 : 1;
+  if (pool.length < minNeeded) {
+    alert(`Need at least ${minNeeded} terms with ${studyFocus} data in this category. Try "All" or a broader specialty.`);
     return;
   }
 
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  const count = countVal === "all" ? shuffled.length : Math.min(parseInt(countVal), shuffled.length);
+  const count    = countVal === "all" ? shuffled.length : Math.min(parseInt(countVal), shuffled.length);
   studyTerms = shuffled.slice(0, count);
   studyIndex = 0;
 
@@ -1709,12 +1872,16 @@ function startStudy() {
   if (studyMode === "flashcard") {
     fcKnew = 0; fcForgot = 0;
     document.getElementById("fcContainer").classList.add("active");
-    document.getElementById("studyHeader").querySelector("h2").textContent = "Flashcards";
+    document.getElementById("studyHeader").querySelector("h2").textContent =
+      studyFocus === "symptoms" ? "Symptoms Flashcards" :
+      studyFocus === "treatment" ? "Treatment Flashcards" : "Flashcards";
     renderFlashcard();
   } else {
     qzScore = 0; qzAnswered = 0;
     document.getElementById("qzContainer").classList.add("active");
-    document.getElementById("studyHeader").querySelector("h2").textContent = "Quiz";
+    document.getElementById("studyHeader").querySelector("h2").textContent =
+      studyFocus === "symptoms" ? "Symptoms Quiz" :
+      studyFocus === "treatment" ? "Treatment Quiz" : "Vocabulary Quiz";
     renderQuizQuestion();
   }
 }
@@ -1726,8 +1893,7 @@ function renderFlashcard() {
   const isEnJa = studyDir === "en-ja";
 
   fcFlipped = false;
-  const card = document.getElementById("fcCard");
-  card.classList.remove("flipped");
+  document.getElementById("fcCard").classList.remove("flipped");
 
   document.getElementById("fcProgressText").textContent = `${studyIndex + 1} / ${total}`;
   document.getElementById("fcProgressFill").style.width = `${((studyIndex + 1) / total) * 100}%`;
@@ -1736,26 +1902,68 @@ function renderFlashcard() {
     ? `<ruby>${t.kanji}<rt>${t.reading}</rt></ruby>`
     : (t.kanji || t.reading || "—");
 
-  if (isEnJa) {
-    document.getElementById("fcFrontLabel").textContent  = "English";
-    document.getElementById("fcFrontMain").className     = "fc-main-text";
-    document.getElementById("fcFrontMain").textContent   = t.en;
-    document.getElementById("fcFrontSub").textContent    = "";
-    document.getElementById("fcBackLabel").textContent   = "Japanese";
-    document.getElementById("fcBackMain").className      = "fc-main-text fc-jp-text";
-    document.getElementById("fcBackMain").innerHTML      = jpHtml;
-    document.getElementById("fcBackRomaji").textContent  = t.romaji || "";
-    document.getElementById("fcBackDef").textContent     = t.defJa || t.def || "";
-  } else {
-    document.getElementById("fcFrontLabel").textContent  = "Japanese";
-    document.getElementById("fcFrontMain").className     = "fc-main-text fc-jp-text";
-    document.getElementById("fcFrontMain").innerHTML     = jpHtml;
-    document.getElementById("fcFrontSub").textContent    = t.romaji || "";
-    document.getElementById("fcBackLabel").textContent   = "English";
-    document.getElementById("fcBackMain").className      = "fc-main-text";
-    document.getElementById("fcBackMain").textContent    = t.en;
-    document.getElementById("fcBackRomaji").textContent  = "";
-    document.getElementById("fcBackDef").textContent     = t.def || "";
+  // Reset any inline style overrides from previous card
+  const backMain = document.getElementById("fcBackMain");
+  const backDef  = document.getElementById("fcBackDef");
+  backMain.style.fontSize = backMain.style.fontWeight = "";
+  backDef.style.borderTop = backDef.style.paddingTop = backDef.style.marginTop = "";
+
+  if (studyFocus === "vocabulary") {
+    if (isEnJa) {
+      document.getElementById("fcFrontLabel").textContent = "English";
+      document.getElementById("fcFrontMain").className    = "fc-main-text";
+      document.getElementById("fcFrontMain").textContent  = t.en;
+      document.getElementById("fcFrontSub").textContent   = "";
+      document.getElementById("fcBackLabel").textContent  = "Japanese";
+      backMain.className    = "fc-main-text fc-jp-text";
+      backMain.innerHTML    = jpHtml;
+      document.getElementById("fcBackRomaji").textContent = t.romaji || "";
+      backDef.textContent   = t.defJa || t.def || "";
+    } else {
+      document.getElementById("fcFrontLabel").textContent = "Japanese";
+      document.getElementById("fcFrontMain").className    = "fc-main-text fc-jp-text";
+      document.getElementById("fcFrontMain").innerHTML    = jpHtml;
+      document.getElementById("fcFrontSub").textContent   = t.romaji || "";
+      document.getElementById("fcBackLabel").textContent  = "English";
+      backMain.className    = "fc-main-text";
+      backMain.textContent  = t.en;
+      document.getElementById("fcBackRomaji").textContent = "";
+      backDef.textContent   = t.def || "";
+    }
+
+  } else if (studyFocus === "symptoms") {
+    const sympText = (!isEnJa && SYMPTOMS_JA_MAP[t.id])
+      ? SYMPTOMS_JA_MAP[t.id]
+      : (SYMPTOMS_MAP[t.id] || "—");
+    if (isEnJa) {
+      document.getElementById("fcFrontLabel").textContent = "Condition";
+      document.getElementById("fcFrontMain").className    = "fc-main-text";
+      document.getElementById("fcFrontMain").textContent  = t.en;
+      document.getElementById("fcFrontSub").textContent   = "";
+    } else {
+      document.getElementById("fcFrontLabel").textContent = "疾患名";
+      document.getElementById("fcFrontMain").className    = "fc-main-text fc-jp-text";
+      document.getElementById("fcFrontMain").innerHTML    = jpHtml;
+      document.getElementById("fcFrontSub").textContent   = t.romaji || "";
+    }
+    document.getElementById("fcBackLabel").textContent  = "症状・徴候 / Symptoms";
+    backMain.className   = "fc-main-text"; backMain.textContent = "";
+    backMain.style.fontSize = "0.82rem"; backMain.style.fontWeight = "500";
+    document.getElementById("fcBackRomaji").textContent = "";
+    backDef.textContent  = sympText;
+    backDef.style.borderTop = "none"; backDef.style.paddingTop = "0"; backDef.style.marginTop = "0";
+
+  } else if (studyFocus === "treatment") {
+    document.getElementById("fcFrontLabel").textContent = "Condition";
+    document.getElementById("fcFrontMain").className    = "fc-main-text";
+    document.getElementById("fcFrontMain").textContent  = t.en;
+    document.getElementById("fcFrontSub").textContent   = t.cat || "";
+    document.getElementById("fcBackLabel").textContent  = "Treatment / 治療";
+    backMain.className   = "fc-main-text"; backMain.textContent = "";
+    backMain.style.fontSize = "0.82rem"; backMain.style.fontWeight = "500";
+    document.getElementById("fcBackRomaji").textContent = "";
+    backDef.textContent  = TREATMENT_MAP[t.id] || "—";
+    backDef.style.borderTop = "none"; backDef.style.paddingTop = "0"; backDef.style.marginTop = "0";
   }
 
   document.getElementById("fcSelfAssess").classList.remove("visible");
@@ -1773,17 +1981,11 @@ function flipCard() {
 function fcAssess(knew) {
   if (knew) fcKnew++; else fcForgot++;
   document.getElementById("fcScoreInfo").textContent = `Knew: ${fcKnew} · Forgot: ${fcForgot}`;
-  if (studyIndex < studyTerms.length - 1) {
-    studyIndex++;
-    renderFlashcard();
-  } else {
-    showFCResults();
-  }
+  if (studyIndex < studyTerms.length - 1) { studyIndex++; renderFlashcard(); }
+  else showFCResults();
 }
 
-function fcPrev() {
-  if (studyIndex > 0) { studyIndex--; renderFlashcard(); }
-}
+function fcPrev() { if (studyIndex > 0) { studyIndex--; renderFlashcard(); } }
 function fcNext() {
   if (studyIndex < studyTerms.length - 1) { studyIndex++; renderFlashcard(); }
   else showFCResults();
@@ -1797,8 +1999,7 @@ function fcShuffle() {
 function showFCResults() {
   document.getElementById("fcContainer").classList.remove("active");
   const total   = studyTerms.length;
-  const skipped = total - fcKnew - fcForgot;
-  showResults({ correct: fcKnew, wrong: fcForgot, skipped, total, mode: "flashcard" });
+  showResults({ correct: fcKnew, wrong: fcForgot, skipped: total - fcKnew - fcForgot, total, mode: "flashcard" });
 }
 
 /* ── QUIZ ────────────────────────────────────────────────────────────────── */
@@ -1810,57 +2011,73 @@ function renderQuizQuestion() {
   const isEnJa = studyDir === "en-ja";
 
   qzAnsweredCurrent = false;
+  document.getElementById("qzProgressText").textContent = `${studyIndex + 1} / ${total}`;
+  document.getElementById("qzScoreDisplay").textContent = `Score: ${qzScore}/${qzAnswered}`;
+  document.getElementById("qzProgressFill").style.width = `${(studyIndex / total) * 100}%`;
+  document.getElementById("qzFeedback").textContent     = "";
+  document.getElementById("qzFeedback").className       = "qz-feedback";
+  document.getElementById("qzNextBtn").classList.remove("visible");
 
-  document.getElementById("qzProgressText").textContent  = `${studyIndex + 1} / ${total}`;
-  document.getElementById("qzScoreDisplay").textContent  = `Score: ${qzScore}/${qzAnswered}`;
-  document.getElementById("qzProgressFill").style.width  = `${(studyIndex / total) * 100}%`;
+  if (studyFocus === "vocabulary") {
+    document.getElementById("qzDirLabel").textContent = isEnJa ? "What is the Japanese?" : "What is the English?";
+    if (isEnJa) {
+      document.getElementById("qzQuestionText").textContent = t.en;
+      document.getElementById("qzQuestionText").className   = "qz-question-text";
+      const hint = t.def ? `"${t.def.slice(0, 80)}${t.def.length > 80 ? "…" : ""}"` : "";
+      document.getElementById("qzQuestionSub").textContent  = hint;
+    } else {
+      const jpHtml = (t.kanji && t.reading && t.kanji !== t.reading)
+        ? `<ruby>${t.kanji}<rt>${t.reading}</rt></ruby>` : (t.kanji || t.reading);
+      document.getElementById("qzQuestionText").innerHTML  = jpHtml;
+      document.getElementById("qzQuestionText").className  = "qz-question-text jp";
+      document.getElementById("qzQuestionSub").textContent = t.romaji ? `(${t.romaji})` : "";
+    }
+    const pool    = getAllTerms().filter(x => x.id !== t.id && (x.kanji || x.reading));
+    const wrongs  = [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+    const choices = [t, ...wrongs].sort(() => Math.random() - 0.5);
+    const ci      = choices.indexOf(t);
+    document.getElementById("qzChoices").innerHTML = choices.map((c, i) => {
+      let text = isEnJa ? (c.kanji || c.reading) : c.en;
+      if (isEnJa && c.kanji && c.reading && c.kanji !== c.reading) text += ` (${c.reading})`;
+      return `<button class="qz-choice" onclick="selectChoice(${i},${ci})">${text}</button>`;
+    }).join("");
 
-  document.getElementById("qzDirLabel").textContent = isEnJa ? "What is the Japanese?" : "What is the English?";
-
-  if (isEnJa) {
+  } else if (studyFocus === "symptoms") {
+    document.getElementById("qzDirLabel").textContent     = "Which symptoms match this condition?";
     document.getElementById("qzQuestionText").textContent = t.en;
     document.getElementById("qzQuestionText").className   = "qz-question-text";
-    const hint = t.def ? `"${t.def.slice(0, 80)}${t.def.length > 80 ? "…" : ""}"` : "";
-    document.getElementById("qzQuestionSub").textContent  = hint;
-  } else {
-    const jpHtml = (t.kanji && t.reading && t.kanji !== t.reading)
-      ? `<ruby>${t.kanji}<rt>${t.reading}</rt></ruby>`
-      : (t.kanji || t.reading);
-    document.getElementById("qzQuestionText").innerHTML  = jpHtml;
-    document.getElementById("qzQuestionText").className  = "qz-question-text jp";
-    document.getElementById("qzQuestionSub").textContent = t.romaji ? `(${t.romaji})` : "";
+    document.getElementById("qzQuestionSub").textContent  = t.cat;
+    const correctText  = SYMPTOMS_MAP[t.id];
+    const wrongKeys    = Object.keys(SYMPTOMS_MAP).map(Number).filter(k => k !== t.id)
+                              .sort(() => Math.random() - 0.5).slice(0, 3);
+    const allChoices   = [correctText, ...wrongKeys.map(k => SYMPTOMS_MAP[k])].sort(() => Math.random() - 0.5);
+    const ci           = allChoices.indexOf(correctText);
+    document.getElementById("qzChoices").innerHTML = allChoices.map((text, i) =>
+      `<button class="qz-choice" style="font-size:0.79rem;line-height:1.45;" onclick="selectChoice(${i},${ci})">${text}</button>`
+    ).join("");
+
+  } else if (studyFocus === "treatment") {
+    document.getElementById("qzDirLabel").textContent     = "How is this condition typically treated?";
+    document.getElementById("qzQuestionText").textContent = t.en;
+    document.getElementById("qzQuestionText").className   = "qz-question-text";
+    document.getElementById("qzQuestionSub").textContent  = t.cat;
+    const correctText  = TREATMENT_MAP[t.id];
+    const wrongKeys    = Object.keys(TREATMENT_MAP).map(Number).filter(k => k !== t.id)
+                              .sort(() => Math.random() - 0.5).slice(0, 3);
+    const allChoices   = [correctText, ...wrongKeys.map(k => TREATMENT_MAP[k])].sort(() => Math.random() - 0.5);
+    const ci           = allChoices.indexOf(correctText);
+    document.getElementById("qzChoices").innerHTML = allChoices.map((text, i) =>
+      `<button class="qz-choice" style="font-size:0.79rem;line-height:1.45;" onclick="selectChoice(${i},${ci})">${text}</button>`
+    ).join("");
   }
-
-  const pool   = getAllTerms().filter(x => x.id !== t.id && (x.kanji || x.reading));
-  const wrongs = [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
-  const choices = [t, ...wrongs].sort(() => Math.random() - 0.5);
-  const correctIdx = choices.indexOf(t);
-
-  const choicesEl = document.getElementById("qzChoices");
-  choicesEl.innerHTML = choices.map((c, i) => {
-    let text;
-    if (isEnJa) {
-      text = c.kanji || c.reading;
-      if (c.kanji && c.reading && c.kanji !== c.reading) text += ` (${c.reading})`;
-    } else {
-      text = c.en;
-    }
-    return `<button class="qz-choice" onclick="selectChoice(${i},${correctIdx})">${text}</button>`;
-  }).join("");
-
-  document.getElementById("qzFeedback").textContent = "";
-  document.getElementById("qzFeedback").className   = "qz-feedback";
-  document.getElementById("qzNextBtn").classList.remove("visible");
 }
 
 function selectChoice(i, correctIdx) {
   if (qzAnsweredCurrent) return;
   qzAnsweredCurrent = true;
   qzAnswered++;
-
   const buttons = document.querySelectorAll(".qz-choice");
   buttons.forEach(b => b.disabled = true);
-
   const isCorrect = i === correctIdx;
   if (isCorrect) {
     qzScore++;
@@ -1873,15 +2090,11 @@ function selectChoice(i, correctIdx) {
     document.getElementById("qzFeedback").textContent = "✗ Wrong";
     document.getElementById("qzFeedback").className   = "qz-feedback wrong";
   }
-
   document.getElementById("qzScoreDisplay").textContent = `Score: ${qzScore}/${qzAnswered}`;
   document.getElementById("qzNextBtn").classList.add("visible");
 }
 
-function qzNext() {
-  studyIndex++;
-  renderQuizQuestion();
-}
+function qzNext() { studyIndex++; renderQuizQuestion(); }
 
 function showQzResults() {
   document.getElementById("qzContainer").classList.remove("active");
@@ -1896,19 +2109,12 @@ function showResults({ correct, wrong, skipped, total, mode }) {
   const icon     = assessed === 0 ? "📚" : pct >= 80 ? "🏆" : pct >= 50 ? "👍" : "📖";
   const title    = assessed === 0 ? "Session Complete!" :
                    pct >= 80 ? "Excellent!" : pct >= 50 ? "Good effort!" : "Keep studying!";
-
   document.getElementById("studyResultsIcon").textContent  = icon;
   document.getElementById("studyResultsTitle").textContent = title;
   document.getElementById("studyResultsScore").textContent = assessed > 0 ? `${pct}%` : `${total} cards`;
-
-  if (mode === "flashcard") {
-    document.getElementById("studyResultsSub").textContent =
-      `Knew ${correct} · Forgot ${wrong} · Skipped ${skipped} (out of ${total} cards)`;
-  } else {
-    document.getElementById("studyResultsSub").textContent =
-      `${correct} correct out of ${total} questions`;
-  }
-
+  document.getElementById("studyResultsSub").textContent   = mode === "flashcard"
+    ? `Knew ${correct} · Forgot ${wrong} · Skipped ${skipped} (out of ${total} cards)`
+    : `${correct} correct out of ${total} questions`;
   document.getElementById("studyResults").classList.add("active");
   document.getElementById("studyHeader").querySelector("h2").textContent = "Results";
 }
