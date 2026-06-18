@@ -2159,7 +2159,7 @@ function renderQuizQuestion() {
   document.getElementById("qzNextBtn").classList.remove("visible");
 
   const _qt = document.getElementById("qzQuestionText");
-  _qt.style.fontSize = _qt.style.fontWeight = _qt.style.lineHeight = "";
+  _qt.style.fontSize = _qt.style.fontWeight = _qt.style.lineHeight = _qt.style.fontFamily = "";
 
   if (studyFocus === "vocabulary") {
     document.getElementById("qzDirLabel").textContent = isEnJa ? "What is the Japanese?" : "What is the English?";
@@ -2186,24 +2186,27 @@ function renderQuizQuestion() {
     }).join("");
 
   } else if (studyFocus === "symptoms") {
-    const sympText = SYMPTOMS_MAP[t.id];
-    document.getElementById("qzDirLabel").textContent       = "Which condition matches these symptoms?";
+    const sympText = SYMPTOMS_JA_MAP[t.id] || SYMPTOMS_MAP[t.id];
+    document.getElementById("qzDirLabel").textContent       = "これらの症状はどの疾患ですか？";
     document.getElementById("qzQuestionText").textContent   = sympText;
     document.getElementById("qzQuestionText").className     = "qz-question-text";
     _qt.style.fontSize   = "0.88rem";
     _qt.style.fontWeight = "500";
     _qt.style.lineHeight = "1.6";
-    document.getElementById("qzQuestionSub").textContent    = `Specialty: ${t.cat}`;
-    // Prefer wrong answers from the same category for harder, more educational choices
+    _qt.style.fontFamily = "'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif";
+    document.getElementById("qzQuestionSub").textContent    = `診療科：${CAT_JA[t.cat] || t.cat}`;
     const samecat  = getAllTerms().filter(x => x.id !== t.id && x.cat === t.cat && SYMPTOMS_MAP[x.id] != null);
     const othercat = getAllTerms().filter(x => x.id !== t.id && x.cat !== t.cat && SYMPTOMS_MAP[x.id] != null);
     const wrongPool = samecat.length >= 3 ? samecat : [...samecat, ...othercat];
     const wrongs    = [...wrongPool].sort(() => Math.random() - 0.5).slice(0, 3);
     const allChoices = [t, ...wrongs].sort(() => Math.random() - 0.5);
     const ci         = allChoices.indexOf(t);
-    document.getElementById("qzChoices").innerHTML = allChoices.map((c, i) =>
-      `<button class="qz-choice" onclick="selectChoice(${i},${ci})">${c.en}</button>`
-    ).join("");
+    const JP_FONT    = "font-family:'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif;";
+    document.getElementById("qzChoices").innerHTML = allChoices.map((c, i) => {
+      const name    = c.kanji || c.reading || c.en;
+      const reading = (c.kanji && c.reading && c.kanji !== c.reading) ? `<span style="font-size:0.78em;opacity:0.7;"> (${c.reading})</span>` : "";
+      return `<button class="qz-choice" style="${JP_FONT}" onclick="selectChoice(${i},${ci})">${name}${reading}</button>`;
+    }).join("");
 
   } else if (studyFocus === "treatment") {
     document.getElementById("qzDirLabel").textContent     = "How is this condition typically treated?";
