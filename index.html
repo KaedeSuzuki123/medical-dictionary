@@ -446,6 +446,84 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
 .results-btn.ghost { background: white; color: var(--muted); border: 1.5px solid var(--border); }
 .results-btn.ghost:hover { border-color: #aaa; color: var(--text); }
 
+/* Body Map Game */
+.bodymap-container { display: none; padding: 1rem 1.2rem 0.8rem; }
+.bodymap-container.active { display: block; }
+
+.bm-progress {
+  display: flex; align-items: center; font-size: 0.8rem;
+  color: var(--muted); margin-bottom: 0.75rem;
+}
+.bm-progress-bar {
+  flex: 1; height: 4px; background: #e8eaf0;
+  border-radius: 999px; margin: 0 0.75rem; overflow: hidden;
+}
+.bm-progress-fill { height: 100%; background: #8b5cf6; border-radius: 999px; transition: width 0.35s; }
+.bm-score-display { font-weight: 700; color: #8b5cf6; white-space: nowrap; }
+
+.bm-body-wrap { display: flex; justify-content: center; margin-bottom: 0.75rem; }
+.bm-svg { width: 180px; height: auto; flex-shrink: 0; }
+
+.bm-body-shape { fill: #f5f0ea; stroke: #c8b49a; stroke-width: 1.5; }
+.bm-marker {
+  fill: #dde8ff; stroke: #6b8ec8; stroke-width: 1.5;
+  transition: fill 0.2s, stroke 0.2s;
+}
+.bm-marker.bm-correct { fill: #bbf7d0; stroke: #16a34a; stroke-width: 1.5; }
+.bm-marker.bm-wrong   { fill: #fecaca; stroke: #dc2626; stroke-width: 1.5; }
+.bm-marker.bm-active  {
+  fill: #fef08a; stroke: #ca8a04; stroke-width: 2;
+  animation: bm-pulse 1s ease-in-out infinite;
+}
+@keyframes bm-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px #fbbf24); }
+  50%       { filter: drop-shadow(0 0 7px #f59e0b); }
+}
+.bm-num {
+  font-size: 6.5px; font-weight: 700; fill: #1a4a7c;
+  text-anchor: middle; dominant-baseline: central; pointer-events: none;
+}
+.bm-num.bm-active { fill: #78350f; }
+
+.bm-dir-label {
+  text-align: center; font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 0.5rem;
+  font-family: 'Yu Gothic','Hiragino Kaku Gothic Pro',sans-serif;
+}
+.bm-choices {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.42rem; margin-bottom: 0.55rem;
+}
+.bm-choice {
+  padding: 0.5rem 0.4rem; border: 2px solid var(--border);
+  border-radius: 8px; background: white; cursor: pointer;
+  font-family: 'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif;
+  font-size: 1rem; font-weight: 600; color: var(--text);
+  text-align: center; transition: all 0.12s; line-height: 1.25;
+}
+.bm-choice:hover:not(:disabled) { border-color: #8b5cf6; background: #f5f3ff; }
+.bm-choice:disabled { cursor: default; }
+.bm-choice .bm-ch-reading { font-size: 0.65rem; opacity: 0.6; font-weight: 400; display: block; }
+.bm-choice.correct  { border-color: #22c55e !important; background: #f0fdf4 !important; color: #15803d !important; }
+.bm-choice.wrong    { border-color: #ef4444 !important; background: #fef2f2 !important; color: #dc2626 !important; }
+.bm-choice.revealed { border-color: #22c55e !important; background: #f0fdf4 !important; color: #15803d !important; }
+
+.bm-feedback {
+  min-height: 1.3rem; text-align: center;
+  font-size: 0.82rem; font-weight: 700; margin-bottom: 0.4rem;
+  font-family: 'Yu Gothic','Hiragino Kaku Gothic Pro',sans-serif;
+}
+.bm-feedback.correct { color: #15803d; }
+.bm-feedback.wrong   { color: #dc2626; }
+
+.bm-next-btn {
+  width: 100%; padding: 0.58rem; background: #7c3aed; color: white;
+  border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; font-family: inherit; display: none; transition: background 0.15s;
+}
+.bm-next-btn.visible { display: block; }
+.bm-next-btn:hover { background: #6d28d9; }
+
 .study-focus-row {
   display: flex; gap: 0.45rem; margin-bottom: 1rem;
 }
@@ -507,7 +585,15 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
             <div class="mode-card-name">Quiz</div>
             <div class="mode-card-desc">4-choice multiple choice</div>
           </button>
+          <button class="mode-card" data-mode="bodymap" onclick="selectStudyMode('bodymap')" style="grid-column:1/-1;display:flex;flex-direction:row;align-items:center;gap:0.6rem;text-align:left;">
+            <div class="mode-card-icon" style="font-size:1.6rem;flex-shrink:0;">🫁</div>
+            <div>
+              <div class="mode-card-name">Body Map</div>
+              <div class="mode-card-desc">Identify organs on a diagram</div>
+            </div>
+          </button>
         </div>
+        <div id="studyOptionsRows">
         <div class="study-focus-row">
           <button class="focus-pill active" data-focus="vocabulary" onclick="selectStudyFocus('vocabulary')">📚 Vocabulary</button>
           <button class="focus-pill" data-focus="symptoms"  onclick="selectStudyFocus('symptoms')">🩺 Symptoms</button>
@@ -537,6 +623,7 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
             </select>
           </div>
         </div>
+        </div><!-- /studyOptionsRows -->
         <button class="study-start-btn" onclick="startStudy()">Start Studying →</button>
       </div>
     </div>
@@ -590,6 +677,41 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
       <div class="quiz-choices" id="qzChoices"></div>
       <div class="qz-feedback"  id="qzFeedback"></div>
       <button class="qz-next-btn" id="qzNextBtn" onclick="qzNext()">Next Question →</button>
+    </div>
+
+    <!-- BODY MAP -->
+    <div class="bodymap-container" id="bmContainer">
+      <div class="bm-progress">
+        <span id="bmProgressText">1 / 16</span>
+        <div class="bm-progress-bar"><div class="bm-progress-fill" id="bmProgressFill" style="width:6%"></div></div>
+        <span class="bm-score-display" id="bmScoreDisplay">0/0</span>
+      </div>
+      <div class="bm-body-wrap">
+        <svg class="bm-svg" viewBox="0 0 280 520" xmlns="http://www.w3.org/2000/svg">
+          <!-- Head -->
+          <ellipse cx="140" cy="48" rx="33" ry="36" class="bm-body-shape"/>
+          <!-- Neck -->
+          <rect x="129" y="81" width="22" height="23" rx="4" class="bm-body-shape"/>
+          <!-- Torso -->
+          <rect x="90" y="100" width="100" height="242" rx="18" class="bm-body-shape"/>
+          <!-- Left arm -->
+          <ellipse cx="72" cy="190" rx="15" ry="83" transform="rotate(-4 72 190)" class="bm-body-shape"/>
+          <!-- Right arm -->
+          <ellipse cx="208" cy="190" rx="15" ry="83" transform="rotate(4 208 190)" class="bm-body-shape"/>
+          <!-- Pelvis -->
+          <rect x="80" y="332" width="120" height="58" rx="26" class="bm-body-shape"/>
+          <!-- Left leg -->
+          <ellipse cx="114" cy="453" rx="20" ry="66" class="bm-body-shape"/>
+          <!-- Right leg -->
+          <ellipse cx="166" cy="453" rx="20" ry="66" class="bm-body-shape"/>
+          <!-- Organ markers (rendered by JS) -->
+          <g id="bmMarkers"></g>
+        </svg>
+      </div>
+      <div class="bm-dir-label">この部位はどれですか？</div>
+      <div class="bm-choices" id="bmChoices"></div>
+      <div class="bm-feedback" id="bmFeedback"></div>
+      <button class="bm-next-btn" id="bmNextBtn" onclick="bmNext()">次の部位へ →</button>
     </div>
 
     <!-- RESULTS -->
@@ -1925,6 +2047,128 @@ function submitTerm(e) {
   render();
 }
 
+/* ── BODY PARTS DATA ────────────────────────────────────────────────────────── */
+const BODY_PARTS = [
+  { nameJa: "脳",      reading: "のう",             nameEn: "Brain",           x: 140, y: 48  },
+  { nameJa: "甲状腺",  reading: "こうじょうせん",   nameEn: "Thyroid gland",   x: 150, y: 98  },
+  { nameJa: "気管",    reading: "きかん",            nameEn: "Trachea",         x: 128, y: 118 },
+  { nameJa: "肺",      reading: "はい",              nameEn: "Lung",            x: 110, y: 162 },
+  { nameJa: "心臓",    reading: "しんぞう",          nameEn: "Heart",           x: 126, y: 178 },
+  { nameJa: "大動脈",  reading: "だいどうみゃく",    nameEn: "Aorta",           x: 154, y: 196 },
+  { nameJa: "横隔膜",  reading: "おうかくまく",      nameEn: "Diaphragm",       x: 140, y: 218 },
+  { nameJa: "肝臓",    reading: "かんぞう",          nameEn: "Liver",           x: 163, y: 238 },
+  { nameJa: "胃",      reading: "い",                nameEn: "Stomach",         x: 116, y: 244 },
+  { nameJa: "胆嚢",    reading: "たんのう",          nameEn: "Gallbladder",     x: 166, y: 260 },
+  { nameJa: "膵臓",    reading: "すいぞう",          nameEn: "Pancreas",        x: 128, y: 265 },
+  { nameJa: "腎臓",    reading: "じんぞう",          nameEn: "Kidney",          x: 106, y: 278 },
+  { nameJa: "小腸",    reading: "しょうちょう",      nameEn: "Small intestine", x: 140, y: 296 },
+  { nameJa: "大腸",    reading: "だいちょう",        nameEn: "Large intestine", x: 156, y: 316 },
+  { nameJa: "虫垂",    reading: "ちゅうすい",        nameEn: "Appendix",        x: 172, y: 330 },
+  { nameJa: "膀胱",    reading: "ぼうこう",          nameEn: "Bladder",         x: 140, y: 350 },
+];
+
+/* ── BODY MAP STATE ──────────────────────────────────────────────────────────── */
+let bmQueue    = [];
+let bmIndex    = 0;
+let bmCorrect  = 0;
+let bmTotal    = 0;
+let bmAnsweredCurrent = false;
+
+function startBodyMap() {
+  bmQueue   = [...BODY_PARTS].sort(() => Math.random() - 0.5);
+  bmIndex   = 0;
+  bmCorrect = 0;
+  bmTotal   = 0;
+
+  document.getElementById("studySetup").style.display = "none";
+  document.getElementById("bmContainer").classList.add("active");
+  document.getElementById("studyHeader").querySelector("h2").textContent = "Body Map";
+
+  renderBMMarkers();
+  renderBMQuestion();
+}
+
+function renderBMMarkers() {
+  document.getElementById("bmMarkers").innerHTML = BODY_PARTS.map((p, i) => `
+    <circle id="bm-dot-${i}" class="bm-marker" cx="${p.x}" cy="${p.y}" r="8"/>
+    <text   id="bm-num-${i}" class="bm-num"    x="${p.x}"  y="${p.y}">${i + 1}</text>
+  `).join("");
+}
+
+function renderBMQuestion() {
+  if (bmIndex >= bmQueue.length) { showBMResults(); return; }
+
+  const part  = bmQueue[bmIndex];
+  const origI = BODY_PARTS.indexOf(part);
+  const total = bmQueue.length;
+  bmAnsweredCurrent = false;
+
+  document.getElementById("bmProgressText").textContent = `${bmIndex + 1} / ${total}`;
+  document.getElementById("bmProgressFill").style.width = `${(bmIndex / total) * 100}%`;
+  document.getElementById("bmScoreDisplay").textContent = `${bmCorrect}/${bmTotal}`;
+  document.getElementById("bmFeedback").textContent     = "";
+  document.getElementById("bmFeedback").className       = "bm-feedback";
+  document.getElementById("bmNextBtn").classList.remove("visible");
+
+  // Highlight the active marker, keep state of already-answered ones
+  BODY_PARTS.forEach((p, i) => {
+    const dot = document.getElementById(`bm-dot-${i}`);
+    const num = document.getElementById(`bm-num-${i}`);
+    if (!dot) return;
+    dot.classList.remove("bm-active");
+    num.classList.remove("bm-active");
+    if (i === origI) { dot.classList.add("bm-active"); num.classList.add("bm-active"); }
+  });
+
+  // 4 choices — correct + 3 random others
+  const wrongs  = BODY_PARTS.filter(p => p !== part).sort(() => Math.random() - 0.5).slice(0, 3);
+  const choices = [part, ...wrongs].sort(() => Math.random() - 0.5);
+  const ci      = choices.indexOf(part);
+
+  document.getElementById("bmChoices").innerHTML = choices.map((c, i) =>
+    `<button class="bm-choice" onclick="bmSelectChoice(${i},${ci})">
+       ${c.nameJa}<span class="bm-ch-reading">${c.reading}</span>
+     </button>`
+  ).join("");
+}
+
+function bmSelectChoice(i, ci) {
+  if (bmAnsweredCurrent) return;
+  bmAnsweredCurrent = true;
+  bmTotal++;
+
+  const part  = bmQueue[bmIndex];
+  const origI = BODY_PARTS.indexOf(part);
+  document.querySelectorAll(".bm-choice").forEach(b => b.disabled = true);
+
+  const dot = document.getElementById(`bm-dot-${origI}`);
+  dot.classList.remove("bm-active");
+
+  if (i === ci) {
+    bmCorrect++;
+    document.querySelectorAll(".bm-choice")[i].classList.add("correct");
+    document.getElementById("bmFeedback").textContent = `✓ ${part.nameJa}（${part.nameEn}）`;
+    document.getElementById("bmFeedback").className   = "bm-feedback correct";
+    dot.classList.add("bm-correct");
+  } else {
+    document.querySelectorAll(".bm-choice")[i].classList.add("wrong");
+    document.querySelectorAll(".bm-choice")[ci].classList.add("revealed");
+    document.getElementById("bmFeedback").textContent = `✗ 正解：${part.nameJa}（${part.nameEn}）`;
+    document.getElementById("bmFeedback").className   = "bm-feedback wrong";
+    dot.classList.add("bm-wrong");
+  }
+
+  document.getElementById("bmScoreDisplay").textContent = `${bmCorrect}/${bmTotal}`;
+  document.getElementById("bmNextBtn").classList.add("visible");
+}
+
+function bmNext() { bmIndex++; renderBMQuestion(); }
+
+function showBMResults() {
+  document.getElementById("bmContainer").classList.remove("active");
+  showResults({ correct: bmCorrect, wrong: bmTotal - bmCorrect, skipped: 0, total: bmQueue.length, mode: "quiz" });
+}
+
 /* ── STUDY MODE ─────────────────────────────────────────────────────────────── */
 let studyMode  = "flashcard";
 let studyDir   = "en-ja";
@@ -1954,6 +2198,7 @@ function showStudySetup() {
   document.getElementById("studySetup").style.display = "";
   document.getElementById("fcContainer").classList.remove("active");
   document.getElementById("qzContainer").classList.remove("active");
+  document.getElementById("bmContainer").classList.remove("active");
   document.getElementById("studyResults").classList.remove("active");
   document.getElementById("studyHeader").querySelector("h2").innerHTML =
     "Study Mode &nbsp;·&nbsp; <span style=\"font-family:'Yu Gothic',sans-serif;font-weight:400;font-size:0.9em;\">学習モード</span>";
@@ -1970,6 +2215,7 @@ function selectStudyMode(mode) {
   studyMode = mode;
   document.querySelectorAll(".mode-card").forEach(el => el.classList.remove("selected"));
   document.querySelector(`.mode-card[data-mode="${mode}"]`).classList.add("selected");
+  document.getElementById("studyOptionsRows").style.display = mode === "bodymap" ? "none" : "";
 }
 
 function selectStudyFocus(focus) {
@@ -1987,6 +2233,8 @@ function startStudy() {
   studyDir = document.getElementById("studyDirSelect").value;
   studyCat = document.getElementById("studyCatSelect").value;
   const countVal = document.getElementById("studyCountSelect").value;
+
+  if (studyMode === "bodymap") { startBodyMap(); return; }
 
   const pool = getAllTerms().filter(t => {
     if (studyCat !== "All" && t.cat !== studyCat) return false;
