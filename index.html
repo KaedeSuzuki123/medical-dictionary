@@ -2158,6 +2158,9 @@ function renderQuizQuestion() {
   document.getElementById("qzFeedback").className       = "qz-feedback";
   document.getElementById("qzNextBtn").classList.remove("visible");
 
+  const _qt = document.getElementById("qzQuestionText");
+  _qt.style.fontSize = _qt.style.fontWeight = _qt.style.lineHeight = "";
+
   if (studyFocus === "vocabulary") {
     document.getElementById("qzDirLabel").textContent = isEnJa ? "What is the Japanese?" : "What is the English?";
     if (isEnJa) {
@@ -2183,17 +2186,23 @@ function renderQuizQuestion() {
     }).join("");
 
   } else if (studyFocus === "symptoms") {
-    document.getElementById("qzDirLabel").textContent     = "Which symptoms match this condition?";
-    document.getElementById("qzQuestionText").textContent = t.en;
-    document.getElementById("qzQuestionText").className   = "qz-question-text";
-    document.getElementById("qzQuestionSub").textContent  = t.cat;
-    const correctText  = SYMPTOMS_MAP[t.id];
-    const wrongKeys    = Object.keys(SYMPTOMS_MAP).map(Number).filter(k => k !== t.id)
-                              .sort(() => Math.random() - 0.5).slice(0, 3);
-    const allChoices   = [correctText, ...wrongKeys.map(k => SYMPTOMS_MAP[k])].sort(() => Math.random() - 0.5);
-    const ci           = allChoices.indexOf(correctText);
-    document.getElementById("qzChoices").innerHTML = allChoices.map((text, i) =>
-      `<button class="qz-choice" style="font-size:0.79rem;line-height:1.45;" onclick="selectChoice(${i},${ci})">${text}</button>`
+    const sympText = SYMPTOMS_MAP[t.id];
+    document.getElementById("qzDirLabel").textContent       = "Which condition matches these symptoms?";
+    document.getElementById("qzQuestionText").textContent   = sympText;
+    document.getElementById("qzQuestionText").className     = "qz-question-text";
+    _qt.style.fontSize   = "0.88rem";
+    _qt.style.fontWeight = "500";
+    _qt.style.lineHeight = "1.6";
+    document.getElementById("qzQuestionSub").textContent    = `Specialty: ${t.cat}`;
+    // Prefer wrong answers from the same category for harder, more educational choices
+    const samecat  = getAllTerms().filter(x => x.id !== t.id && x.cat === t.cat && SYMPTOMS_MAP[x.id] != null);
+    const othercat = getAllTerms().filter(x => x.id !== t.id && x.cat !== t.cat && SYMPTOMS_MAP[x.id] != null);
+    const wrongPool = samecat.length >= 3 ? samecat : [...samecat, ...othercat];
+    const wrongs    = [...wrongPool].sort(() => Math.random() - 0.5).slice(0, 3);
+    const allChoices = [t, ...wrongs].sort(() => Math.random() - 0.5);
+    const ci         = allChoices.indexOf(t);
+    document.getElementById("qzChoices").innerHTML = allChoices.map((c, i) =>
+      `<button class="qz-choice" onclick="selectChoice(${i},${ci})">${c.en}</button>`
     ).join("");
 
   } else if (studyFocus === "treatment") {
