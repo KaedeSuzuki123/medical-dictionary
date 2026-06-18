@@ -602,9 +602,10 @@ ruby rt { font-size: 0.55em; color: var(--muted); line-height: 1; }
         </div>
         <div id="studyOptionsRows">
         <div class="study-focus-row">
-          <button class="focus-pill active" data-focus="vocabulary" onclick="selectStudyFocus('vocabulary')">📚 Vocabulary</button>
-          <button class="focus-pill" data-focus="symptoms"  onclick="selectStudyFocus('symptoms')">🩺 Symptoms</button>
-          <button class="focus-pill" data-focus="treatment" onclick="selectStudyFocus('treatment')">💊 Treatment</button>
+          <button class="focus-pill active" data-focus="vocabulary"  onclick="selectStudyFocus('vocabulary')">📚 Vocab</button>
+          <button class="focus-pill" data-focus="symptoms"   onclick="selectStudyFocus('symptoms')">🩺 Symptoms</button>
+          <button class="focus-pill" data-focus="treatment"  onclick="selectStudyFocus('treatment')">💊 Treatment</button>
+          <button class="focus-pill" data-focus="definition" onclick="selectStudyFocus('definition')">📖 Definition</button>
         </div>
         <div id="studyDirRow" style="margin-bottom:0.75rem;">
           <div class="study-option">
@@ -2273,7 +2274,8 @@ function selectStudyFocus(focus) {
 }
 
 function updateFocusUI() {
-  document.getElementById("studyDirRow").style.display = studyFocus === "treatment" ? "none" : "";
+  const hideDir = studyFocus === "treatment" || studyFocus === "definition";
+  document.getElementById("studyDirRow").style.display = hideDir ? "none" : "";
 }
 
 function startStudy() {
@@ -2285,9 +2287,10 @@ function startStudy() {
 
   const pool = getAllTerms().filter(t => {
     if (studyCat !== "All" && t.cat !== studyCat) return false;
-    if (studyFocus === "vocabulary") return !!(t.kanji || t.reading);
-    if (studyFocus === "symptoms")   return SYMPTOMS_MAP[t.id] != null;
-    if (studyFocus === "treatment")  return TREATMENT_MAP[t.id] != null;
+    if (studyFocus === "vocabulary")  return !!(t.kanji || t.reading);
+    if (studyFocus === "symptoms")    return SYMPTOMS_MAP[t.id] != null;
+    if (studyFocus === "treatment")   return TREATMENT_MAP[t.id] != null;
+    if (studyFocus === "definition")  return !!(t.defJa);
     return false;
   });
 
@@ -2308,15 +2311,17 @@ function startStudy() {
     fcKnew = 0; fcForgot = 0;
     document.getElementById("fcContainer").classList.add("active");
     document.getElementById("studyHeader").querySelector("h2").textContent =
-      studyFocus === "symptoms" ? "Symptoms Flashcards" :
-      studyFocus === "treatment" ? "Treatment Flashcards" : "Flashcards";
+      studyFocus === "symptoms"   ? "Symptoms Flashcards"   :
+      studyFocus === "treatment"  ? "Treatment Flashcards"  :
+      studyFocus === "definition" ? "Definition Flashcards" : "Flashcards";
     renderFlashcard();
   } else {
     qzScore = 0; qzAnswered = 0;
     document.getElementById("qzContainer").classList.add("active");
     document.getElementById("studyHeader").querySelector("h2").textContent =
-      studyFocus === "symptoms" ? "Symptoms Quiz" :
-      studyFocus === "treatment" ? "Treatment Quiz" : "Vocabulary Quiz";
+      studyFocus === "symptoms"   ? "Symptoms Quiz"   :
+      studyFocus === "treatment"  ? "Treatment Quiz"  :
+      studyFocus === "definition" ? "Definition Quiz" : "Vocabulary Quiz";
     renderQuizQuestion();
   }
 }
@@ -2338,10 +2343,12 @@ function renderFlashcard() {
     : (t.kanji || t.reading || "—");
 
   // Reset any inline style overrides from previous card
-  const backMain = document.getElementById("fcBackMain");
-  const backDef  = document.getElementById("fcBackDef");
-  backMain.style.fontSize = backMain.style.fontWeight = "";
-  backDef.style.borderTop = backDef.style.paddingTop = backDef.style.marginTop = "";
+  const frontMain = document.getElementById("fcFrontMain");
+  const backMain  = document.getElementById("fcBackMain");
+  const backDef   = document.getElementById("fcBackDef");
+  frontMain.style.fontSize = frontMain.style.fontWeight = frontMain.style.lineHeight = frontMain.style.fontFamily = "";
+  backMain.style.fontSize  = backMain.style.fontWeight  = backMain.style.lineHeight  = backMain.style.fontFamily  = "";
+  backDef.style.borderTop  = backDef.style.paddingTop   = backDef.style.marginTop    = "";
 
   if (studyFocus === "vocabulary") {
     if (isEnJa) {
@@ -2399,6 +2406,21 @@ function renderFlashcard() {
     document.getElementById("fcBackRomaji").textContent = "";
     backDef.textContent  = TREATMENT_MAP[t.id] || "—";
     backDef.style.borderTop = "none"; backDef.style.paddingTop = "0"; backDef.style.marginTop = "0";
+
+  } else if (studyFocus === "definition") {
+    const JP = "'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif";
+    document.getElementById("fcFrontLabel").textContent   = "定義";
+    frontMain.className      = "fc-main-text";
+    frontMain.textContent    = t.defJa;
+    frontMain.style.fontSize = "0.84rem"; frontMain.style.fontWeight = "500";
+    frontMain.style.lineHeight = "1.6";   frontMain.style.fontFamily = JP;
+    document.getElementById("fcFrontSub").textContent     = "";
+    document.getElementById("fcBackLabel").textContent    = "用語";
+    backMain.className = "fc-main-text fc-jp-text";
+    backMain.innerHTML = jpHtml;
+    document.getElementById("fcBackRomaji").textContent   = t.romaji || "";
+    backDef.textContent = t.def || "";
+    backDef.style.borderTop = backDef.style.paddingTop = backDef.style.marginTop = "";
   }
 
   document.getElementById("fcSelfAssess").classList.remove("visible");
@@ -2500,6 +2522,29 @@ function renderQuizQuestion() {
     document.getElementById("qzChoices").innerHTML = allChoices.map((c, i) => {
       const name    = c.kanji || c.reading || c.en;
       const reading = (c.kanji && c.reading && c.kanji !== c.reading) ? `<span style="font-size:0.78em;opacity:0.7;"> (${c.reading})</span>` : "";
+      return `<button class="qz-choice" style="${JP_FONT}" onclick="selectChoice(${i},${ci})">${name}${reading}</button>`;
+    }).join("");
+
+  } else if (studyFocus === "definition") {
+    document.getElementById("qzDirLabel").textContent     = "この定義に当てはまる用語はどれですか？";
+    document.getElementById("qzQuestionText").textContent = t.defJa;
+    document.getElementById("qzQuestionText").className   = "qz-question-text";
+    _qt.style.fontSize   = "0.88rem";
+    _qt.style.fontWeight = "500";
+    _qt.style.lineHeight = "1.6";
+    _qt.style.fontFamily = "'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif";
+    document.getElementById("qzQuestionSub").textContent  = CAT_JA[t.cat] || t.cat;
+    const samecat   = getAllTerms().filter(x => x.id !== t.id && x.cat === t.cat && x.defJa);
+    const othercat  = getAllTerms().filter(x => x.id !== t.id && x.cat !== t.cat && x.defJa);
+    const wrongPool = samecat.length >= 3 ? samecat : [...samecat, ...othercat];
+    const wrongs    = [...wrongPool].sort(() => Math.random() - 0.5).slice(0, 3);
+    const allChoices = [t, ...wrongs].sort(() => Math.random() - 0.5);
+    const ci         = allChoices.indexOf(t);
+    const JP_FONT    = "font-family:'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif;";
+    document.getElementById("qzChoices").innerHTML = allChoices.map((c, i) => {
+      const name    = c.kanji || c.reading || c.en;
+      const reading = (c.kanji && c.reading && c.kanji !== c.reading)
+        ? `<span style="font-size:0.78em;opacity:0.7;"> (${c.reading})</span>` : "";
       return `<button class="qz-choice" style="${JP_FONT}" onclick="selectChoice(${i},${ci})">${name}${reading}</button>`;
     }).join("");
 
