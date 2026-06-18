@@ -2504,17 +2504,20 @@ function renderQuizQuestion() {
     }).join("");
 
   } else if (studyFocus === "treatment") {
-    document.getElementById("qzDirLabel").textContent     = "How is this condition typically treated?";
-    document.getElementById("qzQuestionText").textContent = t.en;
-    document.getElementById("qzQuestionText").className   = "qz-question-text";
-    document.getElementById("qzQuestionSub").textContent  = t.cat;
-    const correctText  = TREATMENT_MAP[t.id];
-    const wrongKeys    = Object.keys(TREATMENT_MAP).map(Number).filter(k => k !== t.id)
+    const jpHtml = (t.kanji && t.reading && t.kanji !== t.reading)
+      ? `<ruby>${t.kanji}<rt>${t.reading}</rt></ruby>` : (t.kanji || t.reading || t.en);
+    document.getElementById("qzDirLabel").textContent    = "この疾患の治療法はどれですか？";
+    document.getElementById("qzQuestionText").innerHTML  = jpHtml;
+    document.getElementById("qzQuestionText").className  = "qz-question-text jp";
+    document.getElementById("qzQuestionSub").textContent = CAT_JA[t.cat] || t.cat;
+    const correctText = TREATMENT_JA_MAP[t.id];
+    const wrongKeys   = Object.keys(TREATMENT_JA_MAP).map(Number).filter(k => k !== t.id)
                               .sort(() => Math.random() - 0.5).slice(0, 3);
-    const allChoices   = [correctText, ...wrongKeys.map(k => TREATMENT_MAP[k])].sort(() => Math.random() - 0.5);
-    const ci           = allChoices.indexOf(correctText);
+    const allChoices  = [correctText, ...wrongKeys.map(k => TREATMENT_JA_MAP[k])].sort(() => Math.random() - 0.5);
+    const ci          = allChoices.indexOf(correctText);
+    const JP_FONT     = "font-family:'Yu Gothic','Hiragino Kaku Gothic Pro','Noto Sans JP',sans-serif;";
     document.getElementById("qzChoices").innerHTML = allChoices.map((text, i) =>
-      `<button class="qz-choice" style="font-size:0.79rem;line-height:1.45;" onclick="selectChoice(${i},${ci})">${text}</button>`
+      `<button class="qz-choice" style="font-size:0.79rem;line-height:1.45;${JP_FONT}" onclick="selectChoice(${i},${ci})">${text}</button>`
     ).join("");
   }
 }
